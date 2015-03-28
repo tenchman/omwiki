@@ -1,0 +1,11 @@
+1 - Please read ChangeLog (in ciwiki-1.x.x folder)
+2 - If you upgrade CiWiki from a previous version ( < 1.5.0 ), please delete 
+the file .login.txt in .didiwiki/ folder.
+3 - If you upgrade CiWiki from a previous version ( > 1.5.0 and < 1.7.0 ), please move 
+the file .login.txt in .didiwiki/permission.
+4 - Please copy the file styles.css in ciwiki-1.x.x folder in .didiwiki/ folder,
+if you have your own styles.css, then update it (run diff to list the differences  
+diff ciwiki-1.x/styles.css ciwiki-1.7.0/styles.css ).
+5 - Create the directory '/scripts' in your home directory and copy the .sh files (
+in particularly, notifynewuser.sh).
+6 - The little script 'finish_install.sh' does the points 3,4 and 5 for you.

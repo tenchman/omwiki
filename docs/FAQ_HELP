@@ -1,0 +1,73 @@
+Q: I got the message 'You need an access code. You should receive it by email.' 
+but I didn't receive any email.
+-------------------------------------------------------------------------------
+A: CiWiki 1.5.1 sends the access code automatically after a new user registration.
+It runs the script notifynewuser.sh in the background. This script must be 
+present in the folder /scripts located in your home directory. To install this 
+script, the easy way is to run install_files.sh (in the folder /scripts of your
+package). notifynewuser.sh requires the program sSMPT, and ssmtp.conf (
+/etc/ssmtp/ssmtp.conf) must be correctly configured.
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+Q: I installed notifynewuser.sh and I still do not receive the access code.
+-------------------------------------------------------------------------------
+A: Did you install sSMTP? (Debian: sudo apt-get install ssmtp) Did you configure 
+ssmtp.conf?  Did you start didiwiki (vers 1.5.1 and above) with the option -s  
+( didiwiki -s ),  or did you configure the crontab?
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+Q: The registration doesn't word and I received this msg: sendmail: Server 
+didn't like our AUTH LOGIN (530 5.7.0 Must issue a STARTTLS command first.) 
+-------------------------------------------------------------------------------
+A: Check ssmtp.conf, you need this line: UseSTARTTLS=YES
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+Q: The registration page returns this message: sendmail: Cannot open mailhub:25
+-------------------------------------------------------------------------------
+A: Did you enter you mailhub?
+
+Example of ssmtp.conf:
+
+root=
+mailhub=smtp.gmail.com:587
+hostname=inphilly@gmail.com
+AuthUser=inphilly@gmail.com
+AuthPass=************** (password is in clear)
+UseSTARTTLS=YES
+FromLineOverride=NO
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+Q: I get this message: sendmail: Authorization failed 
+-------------------------------------------------------------------------------
+A: Check your password inssmtp.conf, AuthPass=xxxxxxxxxxx
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+Q: I can't login anymore since I upgraded to version 1.7 
+-------------------------------------------------------------------------------
+A: The login file has moved. Please, try to run the script finish_install.sh
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+Q: How can I change the style of the pages displayed ? 
+-------------------------------------------------------------------------------
+A: The file styles.css is located in /.didiwiki folder. You can edit this file 
+to change the link color, backgroung color, charset...
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+Q: Other computers can't connect!
+-------------------------------------------------------------------------------
+A: Check your inet address (run the script inet_adr.sh)
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+Q: Can I avoid to logon?
+-------------------------------------------------------------------------------
+A: Only on the host, when ciwiki is started with the option -a ( ciwiki -a )
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+Q: My login name is (null) in the Login information page and I can't change my 
+password.
+-------------------------------------------------------------------------------
+A: Because ciwiki was started with the option -a ( ciwiki -a ), the computer host 
+is automatically logged, so no usernameand password were entered.
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+

@@ -1,0 +1,63 @@
+AUTOMATIC MAILING OF THE ACCESS CODE
+
+October 26, 2013:
+-----------------
+
+If your correct and full inet address is not provided inside
+the registration mail => you should edit notifynewuser.sh (folder scripts)
+and change the line wikiaddr='http://'${str%% *}':8000'
+with wikiaddr='http://your_inet_address:8000'
+
+The registration mail is not sent:
+- Check is ssmtp is installed.
+- ssmtp.conf is correctly configured? (sudo gedit /etc/ssmtp/ssmtp.conf for example)
+- revaliases is correctly configured? (sudo gedit /etc/ssmtp/revaliases for example)
+- Check log files: cat /var/log/mail.err  cat /var/log/mail.log cat /var/log/mail.warn  cat /var/log/mail.info
+
+Vers. 1.5.2 and above: 
+
+The email has direct link that allows to validate the new account and to login immediatly. 
+
+Vers. 1.5.1 and above:
+
+ cron is not required. The script 'notifynewuser.sh' is launched 
+after each new user registration. 'notifynewuser.sh' must be in the folder scripts/ 
+located in your home directory ( ~/scripts/ ), and start didiwiki with the option -s 
+  Ex. didiwiki -a -s
+(don't forget to make 'notifynewuser.sh' executable).
+
+Vers. 1.5.0:
+
+It requires cron, sSMTP and notifynewuser.sh. You will have to edit manually 
+the crontab and the configuration file of sSMTP.
+
+newwikiuser.txt contains the username, password, email and access code
+notifynewuser.sh is a small bash script that send the access code by email,
+it uses sSMTP (a very light MTA which use your mailhost).
+
+1 - Edit the crontab ( $ crontab -e )
+
+In my case the script is located in /home/jp/Desktop/wiki/ciwiki-1.5.0/scripts 
+and I want to run it every minute all the time ( * * * * * )
+Example of crontab:
+
+PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
+SHELL=/bin/sh
+# m h  dom mon dow   command
+* * * * * /home/jp/Bureau/wiki/ciwiki-1.5.0/scripts/notifynewuser.sh&
+
+(crontab is not required for CiWiki >= 1.5.1, see above)
+
+2 - Install sSMTP and edit ssmtp.conf ( /etc/ssmtp/ssmtp.conf )
+Example of configuration for gmail:
+
+root=
+mailhub=smtp.gmail.com:587
+hostname=inphilly@gmail.com
+AuthUser=inphilly@gmail.com
+AuthPass=**************
+UseSTARTTLS=YES
+FromLineOverride=NO
+
+--------------------------------------------------------------------
+

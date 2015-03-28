@@ -1,0 +1,6 @@
+August 9, 2010
+
+- Chrome, Chromium and Konqueror do not display the ciwiki pages correctly. 
+It seems that they do not load the css rules (styles.css).
+
+- Konqueror pops the dialog box "connection lost" each time a page is loaded.

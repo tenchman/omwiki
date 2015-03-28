@@ -1,0 +1,65 @@
+<<< QUICK START >>>
+
+1 - Install ciwiki alias didiwiki
+
+[*] Stop didiwiki if running
+
+In the console, type:
+cd ciwiki-x    (x: version number, 1.7 for instance)
+./configure
+make
+sudo make install
+./finish_install.sh
+didiwiki   (or didiwiki -r   to reinstall WikiHelp)
+
+2 - Autostart
+
+Xfce: 
+Parameters => Session & Startup => Autostart => + Add
+Edit the name: didiwiki and the command: didiwiki
+Gnome:
+System => Preferences => Startup => Add
+Edit the name: didiwiki and the command: didiwiki
+
+
+3 - If problems
+
+In the console, type:
+whereis didiwiki
+return should be: /usr/local/bin/didiwiki
+
+didiwiki -v
+return should be: CiWiki alias DidiWiki - version x (x: the version installed)
+
+pidof didiwiki
+return should be: xxxx (xxxx: pid of didiwiki if it's running.)
+
+[*] Terminate didiwiki:
+kill -15 `pidof didiwiki`
+
+4 - Port
+
+* Normally is 8000
+When you lauch didwiki (in the console) you should read:
+Attempting to bind to 0.0.0.0:8000 .. Success! 
+DidiWiki Started. Please point your browser at 0.0.0.0:8000
+
+Then enter http://0.0.0.0:8000/ or http://localhost:8000/ in the address bar of Firefox...
+
+* If you want to choose another port (strongly recommanded to keep your privacy if your computer
+is a network):
+didiwiki -p xxxx  (xxxx: port number)
+
+* To allow other users on your netword to access to your wiki:
+You will have to give them your inet address and the port
+Type: ifconfig and look for 'net adr'
+The user will have to enter: http://xxx.xxx.xxx.xxx:yyyy
+xxx.xxx.xxx.xxx is the inet adr and yyyy the port number.
+
+To keep some page private (unreadable), use the tag {{private}}
+
+
+
+
+
+

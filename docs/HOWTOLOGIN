@@ -1,0 +1,99 @@
+October 26,2013
+
+If your correct and full inet address is not provided inside
+the registration mail => you should edit notifynewuser.sh (folder scripts)
+and change the line wikiaddr='http://'${str%% *}':8000'
+with wikiaddr='http://your_inet_address:8000'
+
+
+August 7,2010
+CiWiki 1.7.0 alias DidiWiki  
+
+IMPORTANT: 
+- The file login.txt has moved in ~/didiwiki/permission. 
+	Please, run the script finish_install.sh
+- You need sSMTP to send emails
+- Run ciwiki with the option -s ( didiwiki -s )
+- Edit /etc/ssmtp/ssmtp.conf
+- You need notifynewuser.sh in the folder ~/scripts/ 
+- Read MAILINGCODE.
+
+May 26,2010
+CiWiki 1.5.2 alias DidiWiki  
+
+IMPORTANT: If you upgrade CiWiki from CiWiki 1.4.0 or under, please delete 
+the file .login.txt in ~/.didiwiki folder. If you need to keep the login 
+information, contact me. 
+
+*** Version 1.5.1 & 1.5.2  ***
+
+The Email is sent after each new registration (option -s); so it's not required 
+to configure the crontab, but sSMTP is still required.
+
+*** Version 1.5.0  ***
+
+There is a login page; a 'new account page', a logoff and password change page.
+The new file .login.txt in ~/.didiwiki folder is not compatible with the previous one.
+This change was required to allow the password change.
+
+The script notifynewuser.sh sends the access code by email, it requires sSMTP (a light 
+MTP) and requires to configure the crontab too.
+
+!!! Please delete .login.txt in ~/.didiwiki folder.  (If you want to keep it, 
+there is a possibility to update it, contact me).
+
+*** Version 1.2.1 and above ***
+
+I added a simple login procedure to protect the privacy and to decrease the vandalism risk.
+IT'S STILL EXPERIMENTAL. I tested CiWiki 1.2.1 on the intranet of my university, it seems 
+working correctly, login and page permission work too, but I didn't have time to test all 
+the possibilities, PLEASE, report any bugs or other issues. Thanks!
+
+- It's based on the ip addresses of the open sessions.
+
+- The login & permission routines are located in wikilogin. Two files are created:
+.login.txt and .session.txt , both are located in /.didiwiki/ folder and are hidden.
+.login.txt contains the username, its password (crypted), its email, ip address,
+registration time (min), permission and validation flags. Currently, only the username 
+and the password are used.
+.session.txt contains the ip address of the user logged, the time of the last page 
+opened and the username ( version 1.5.0 ).
+
+- If after 30mn a page has not been opened then the ip is canceled, and the user will 
+have to login again. This time can be changed in didi.h macro DISCONNECT
+
+- The login requires the username and the password, both between 8 and 24 characters.
+Space are not allowed, any other chars are theorically possible. (I have to change it).
+The other fields (email,code) are only used to open an account.
+
+- A new user will have to enter its username, password and email address. These info 
+are stored in ~/newwikiusers.txt  , for example:
+U:Gladiator P:Extrem125 M:inphilly@gmail.com I:127.0.0.1 T:21151948 C:43b002e6240
+The user "Gladiator" will have to be contacted by email "inphilly@gmail.com" with 
+these infos: username "Gladiator" password "Extrem125" and access code "43b002e6240"
+
+A little script will be required to automatize the email with sendmail. (the script is 
+provided with CiWiki 1.5.0 and above: notifynewuser.sh)
+
+- The host computer (127.0.0.1) is always logged (CiWiki version < 1.5.0) or automatically
+logged with the option -a (CiWiki version >= 1.5.1 )
+
+- It's possible to have a list of unwanted ip address. Go in the folder ./didiwiki/permission 
+and create a file .unwanted.txt (don't forget the dot to hide the file else that will not work) 
+and write one line for each forbidden ip.
+
+- passwords are crypted and stored in ./didiwiki/permission/.login.txt , crypting method 
+can be modified, check eventually wikilogin.c.
+
+
+LOGIN FEATURES:
+***************
+- Pages cannot be edited or deleted if the user is not logged.
+- Page or part of the page can be hidden with the tag {{ private }}
+- Weirdness: Pages can be created when the user is not logged but could 
+not be modified (edited a second time). [probably, I will have to create this.]
+
+
+Let me know your point of view!
+Jean-Pierre Redonnet
+inphilly@gmail.com
