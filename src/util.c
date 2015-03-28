@@ -22,10 +22,9 @@ util_mprintf(const char *format, ...)
 {
   va_list ap;
   char   *buf = NULL;
-  int     lg;//not used
 
   va_start(ap,format);
-  lg = vasprintf(&buf, format, ap);
+  vasprintf(&buf, format, ap);
   va_end(ap);
 
   return buf;

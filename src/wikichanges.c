@@ -30,7 +30,7 @@ void
 wiki_show_changes_page(HttpResponse *res)
 {
   WikiPageList **pages = NULL;
-  int            n_pages, i,j,m,lg;
+  int            n_pages, i,j,m;
   char          spacing[24];
   char          *difflink;
   int *table, *done; //alloc mem with n_pages
@@ -72,7 +72,7 @@ wiki_show_changes_page(HttpResponse *res)
       i=table[j];
       if ( strstr(pages[i]->name,".prev.1") ) {
         strcpy(spacing,"&nbsp;&nbsp;");
-        lg=asprintf(&difflink,
+        asprintf(&difflink,
           "<a href='Changes?diff1=%s'>diff</a>\n"
           "<a href='Changes?diff2=%s'>comp</a>\n",
           pages[i]->name,pages[i]->name);
@@ -109,7 +109,7 @@ wiki_show_diff_between_pages(HttpResponse *res, char *page, int mode)
   char line[128];
   char *str_ptr;
   char *cmd;
-  int val1,val2,nbln=1,lg;
+  int val1,val2,nbln=1;
   char buffer[128];
   char action;
   
@@ -118,7 +118,7 @@ wiki_show_diff_between_pages(HttpResponse *res, char *page, int mode)
   char *current = strdup(page);
   *strstr(current,".prev")='\0';
   fp=fopen(page,"r");  
-  lg = asprintf(&cmd,"diff -abB %s %s",page,current);
+  asprintf(&cmd,"diff -abB %s %s",page,current);
 
   wiki_show_header(res, "Changes", FALSE, 0);
   

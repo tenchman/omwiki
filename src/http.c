@@ -406,10 +406,9 @@ http_response_printf(HttpResponse *res, const char *format, ...)
 {
   va_list ap;
   char    *tmp = NULL;
-  int     lg; //no used
 
   va_start(ap,format);
-  lg = vasprintf(&tmp, format, ap);
+  vasprintf(&tmp, format, ap);
   va_end(ap);
 
   if ((res->data_len + strlen(tmp) + 1) < res->data_len_alloced)
@@ -596,7 +595,6 @@ http_server(struct in_addr address, int iPort)
   int                reuse = 1;
   int                n = 0;
   char               url_prefix[256];
-  int                val; //not used
 
   /* catch SIGINT */
   (void) signal(SIGINT, sigint);
@@ -688,11 +686,11 @@ http_server(struct in_addr address, int iPort)
           /* *child*, connect stdin/out to socket */
           /* then return req object for caller to handle */
           close(0);
-          val = dup(connection);
+          dup(connection);
           close(1);
-          val = dup(connection);
+          dup(connection);
           close(2);
-          val = dup(connection);
+          dup(connection);
           close(connection);
           return http_request_new();
         }

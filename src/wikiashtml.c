@@ -75,7 +75,6 @@ check_for_link(char *line, int *skip_chars)
   int  w,h;
   int  wwwlink;
   char border_pic_str[32]="",width_pic_str[32]="",height_pic_str[32]="";
-  int lgasprintf; //not used, return lg of str could be useful to check err
 
   if (*p == '[') 
   /* [link] or [link title] or [image link] */
@@ -107,7 +106,7 @@ check_for_link(char *line, int *skip_chars)
       strncpy(url, start, p - start);
       start=q;
       *start = '\0';
-      lgasprintf = asprintf(&result, 
+      asprintf(&result, 
        "<a href='%s'>%s</a>",url,url);       
       *skip_chars = p - start;
       return result;
@@ -123,7 +122,7 @@ check_for_link(char *line, int *skip_chars)
       strncpy(url, start, p - start);
       start=q;
       *start = '\0';
-      lgasprintf = asprintf(&result, 
+      asprintf(&result, 
       "<object width=\"480\" height=\"385\"><param name=\"movie\" value=\"%s\">"
       "</param><param name=\"allowFullScreen\" value=\"true\"></param><param name=\"allowscriptaccess\" "
       "value=\"always\"></param><embed src=\"%s\" type=\"application/x-shockwave-flash\" "
@@ -144,7 +143,7 @@ check_for_link(char *line, int *skip_chars)
       strncpy(url, start, p - start);
       start=q;
       *start = '\0';
-      lgasprintf = asprintf(&result, 
+      asprintf(&result, 
       "<object width=\"480\" height=\"275\"><param name=\"movie\" value=\"%s\">"
       "</param><param name=\"allowFullScreen\" value=\"true\"></param><param name=\"allowScriptAccess\" "
       "value=\"always\"></param><embed src=\"%s\" width=\"480\" height=\"275\" allowfullscreen=\"true\" "
@@ -164,7 +163,7 @@ check_for_link(char *line, int *skip_chars)
       strncpy(url, start, p - start);
       start=q;
       *start = '\0';
-      lgasprintf = asprintf(&result, 
+      asprintf(&result, 
       "<object width=\"400\" height=\"225\"><param name=\"allowfullscreen\" value=\"true\" />"
       "<param name=\"allowscriptaccess\" value=\"always\" /><param name=\"movie\" "
       "value=\"%s&amp;server=vimeo.com&amp;show_title=1&amp;show_byline=1&amp;show_portrait=0&amp;color=&amp;fullscreen=1\" />"
@@ -187,7 +186,7 @@ check_for_link(char *line, int *skip_chars)
       strncpy(url, start, p - start);
       start=q;
       *start = '\0';
-      lgasprintf = asprintf(&result, 
+      asprintf(&result, 
       "<object width=\"410\" height=\"341\" id=\"veohFlashPlayer\" name=\"veohFlashPlayer\">"
       "<param name=\"movie\" value=\"%s&player=videodetailsembedded&videoAutoPlay=0&id=anonymous\">"
       "</param><param name=\"allowFullScreen\" value=\"true\">"
@@ -217,7 +216,7 @@ check_for_link(char *line, int *skip_chars)
       strncpy(url, start, p - start);
       start=q;
       *start = '\0';
-      lgasprintf = asprintf(&result, 
+      asprintf(&result, 
       "<object type=\"application/x-shockwave-flash\" data=\"%s\" width=\"%i\" height=\"%i\">"
       "<param name=\"movie\" value=\"%s\"></object>",
       url, w, h, url);  
@@ -241,7 +240,7 @@ check_for_link(char *line, int *skip_chars)
       strncpy(url, start, p - start);
       start=q;
       *start = '\0';
-      lgasprintf = asprintf(&result, 
+      asprintf(&result, 
       "<object type=\"application/x-shockwave-flash\" data=\"%s\" width=\"%i\" height=\"%i\">",
         url, w, h); 
       *skip_chars = p - start;
@@ -304,10 +303,10 @@ check_for_link(char *line, int *skip_chars)
             border_pic_str[0]='\0';
         
           if (title) // case: [image link]
-            lgasprintf = asprintf(&result, "<a href=\"%s\"><img src=\"%s\"%s%s%s></a>",
+            asprintf(&result, "<a href=\"%s\"><img src=\"%s\"%s%s%s></a>",
                  title, url, border_pic_str, width_pic_str, height_pic_str);
           else // case: http://link_to_image
-            lgasprintf = asprintf(&result, "<img src=\"%s\"%s%s%s>", 
+            asprintf(&result, "<img src=\"%s\"%s%s%s>", 
                 url, border_pic_str, width_pic_str, height_pic_str);
       }
       else // url or title does'nt link to an image
@@ -324,16 +323,16 @@ check_for_link(char *line, int *skip_chars)
           if (target_wwwlink && wwwlink)
           {
             if (title)
-              lgasprintf = asprintf(&result,"<a %s href='%s' target='_blank'>%s</a>", extra_attr, url, title);
+              asprintf(&result,"<a %s href='%s' target='_blank'>%s</a>", extra_attr, url, title);
             else
-              lgasprintf = asprintf(&result, "<a %s href='%s' target='_blank'>%s</a>", extra_attr, url, url);
+              asprintf(&result, "<a %s href='%s' target='_blank'>%s</a>", extra_attr, url, url);
           }
           else
           {
             if (title)
-              lgasprintf = asprintf(&result,"<a %s href='%s'>%s</a>", extra_attr, url, title);
+              asprintf(&result,"<a %s href='%s'>%s</a>", extra_attr, url, title);
             else
-              lgasprintf = asprintf(&result, "<a %s href='%s'>%s</a>", extra_attr, url, url);
+              asprintf(&result, "<a %s href='%s'>%s</a>", extra_attr, url, url);
           }
       }
 
