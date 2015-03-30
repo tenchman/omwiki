@@ -1,0 +1,13 @@
+autom4te.cache/
+compile
+config.h
+config.log
+config.status
+configure
+src/.deps/
+*.o
+stamp*
+src/didiwiki
+*~
+Makefile
+
