@@ -4,6 +4,7 @@ AC_CONFIG_SRCDIR([src/util.c])
 AM_CONFIG_HEADER(config.h)
 
 AM_INIT_AUTOMAKE()
+AM_SILENT_RULES([yes])
 
 # Checks for programs.
 AC_PROG_CC
@@ -47,4 +48,4 @@ echo "  delete \$HOME/.didiwiki/WikiHelp or start didiwiki with option -r"
 echo "  (didiwiki -r ) to get updated with the latest version."
 echo "  b) Run the script finish_install.sh to install the .sh and .css files."
 echo
-xterm -e "./finish_install.sh"
+sh "./finish_install.sh"
