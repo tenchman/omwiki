@@ -36,17 +36,20 @@ struct HttpRequest
   char             *ip_src;
 };
 
+typedef struct {
+  int len;
+  int total;
+  char *s;
+} string_t;
+
 struct HttpResponse 
 {
   char *content_type;
   char *status_str;
   int   status;
 
-  char *extra_headers;
-
-  char *data;
-  int   data_len;
-  int   data_len_alloced;
+  string_t extra_headers;
+  string_t data;
 };
 
 /*
@@ -379,25 +382,30 @@ http_response_set_content_type(HttpResponse *res, char *type)
 void
 http_response_append_header(HttpResponse *res, char *header)
 {
-  if (res->extra_headers)
-    {
-      res->extra_headers 
-	= realloc( res->extra_headers, 
-		   strlen(res->extra_headers) + strlen(header) + 1);
-      strcat(res->extra_headers, header);
-    }
-  else
-    {
-      res->extra_headers = strdup(header);
-    }
+  int len = strlen(header); /* include terminating '\0' */
+  char *s;
+
+  if (NULL == header) {
+    /* missing header */
+  } else if (0 == (len = strlen(header))) {
+    /* zero sized header */
+  } else if (NULL == (s = realloc(res->extra_headers.s,
+			   res->extra_headers.len + len + 1))) {
+    syslog(LOG_LOCAL0|LOG_ERR, "%s: memory allocation failed", __func__);
+  } else {
+    memcpy(s + res->extra_headers.len, header, len + 1);
+    res->extra_headers.len += len;
+    res->extra_headers.s = s;
+    res->extra_headers.total = res->extra_headers.len;
+  }
 }
 
 
 void
 http_response_printf_alloc_buffer(HttpResponse *res, int bytes)
 {
-  res->data_len_alloced += bytes;
-  res->data = realloc( res->data, res->data_len_alloced );
+  res->data.total += bytes;
+  res->data.s = realloc(res->data.s, res->data.total);
 }
 
 
@@ -412,27 +420,27 @@ http_response_printf(HttpResponse *res, const char *format, ...)
   len = vasprintf(&tmp, format, ap);
   va_end(ap);
 
-  if ((res->data_len + len + 1) < res->data_len_alloced)
+  if ((res->data.len + len + 1) < res->data.total)
     {
-      if (res->data_len) {
-	memcpy(res->data + res->data_len, tmp, len + 1);
-	res->data_len = res->data_len + len;
+      if (res->data.len) {
+	memcpy(res->data.s + res->data.len, tmp, len + 1);
+	res->data.len += len;
       } else {
-	memcpy(res->data, tmp, len + 1);
-	res->data_len = len;
+	memcpy(res->data.s, tmp, len + 1);
+	res->data.len = len;
       }
     }
-  else if (!res->data_len) 		/* no data printed yet */
+  else if (!res->data.len) 		/* no data printed yet */
     {
-      res->data = malloc(len + 1);
-      memcpy(res->data, tmp, len + 1);
-      res->data_len = res->data_len_alloced = len;
+      res->data.s = malloc(len + 1);
+      memcpy(res->data.s, tmp, len + 1);
+      res->data.len = res->data.total = len;
     }
   else
     {
-      res->data = realloc(res->data, res->data_len + len + 1);
-      memcpy(res->data + res->data_len, tmp, len + 1);
-      res->data_len = res->data_len_alloced = res->data_len + len;
+      res->data.s = realloc(res->data.s, res->data.len + len + 1);
+      memcpy(res->data.s + res->data.len, tmp, len + 1);
+      res->data.len = res->data.total = res->data.len + len;
     }
 
   free(tmp);
@@ -452,8 +460,8 @@ http_response_set_status(HttpResponse *res,
 void
 http_response_set_data(HttpResponse *res, void *data, int data_len)
 {
-  res->data     = (char *)data;
-  res->data_len = data_len; 
+  res->data.s   = (char *)data;
+  res->data.len = data_len; 
 }
 
 void
@@ -485,16 +493,16 @@ http_response_send_headers(HttpResponse *res)
 {
   printf("HTTP/1.0 %d %s\r\n", res->status, res->status_str);
 
-  if (res->extra_headers) printf("%s", res->extra_headers);
+  if (res->extra_headers.len) fwrite(res->extra_headers.s, res->extra_headers.len, 1, stdout);
 
   /* XXX didi likes cookies etc */
 
   printf("Content-Type: %s; charset=UTF-8\r\n", 
 	 res->content_type == NULL ? "text/html" : res->content_type);
 
-  if (res->data_len)
+  if (res->data.len)
     {
-      printf("Content-Length: %d\r\n", res->data_len);
+      printf("Content-Length: %d\r\n", res->data.len);
       printf("Connection: close\r\n"); /* if fullHttpReply */
     }
 
@@ -506,9 +514,9 @@ http_response_send(HttpResponse *res)
 {
   http_response_send_headers(res);
 
-  if (res->data) {
-      fwrite(res->data, 1, res->data_len, stdout);
-    }
+  if (res->data.len) {
+    fwrite(res->data.s, 1, res->data.len, stdout);
+  }
 }
 
 
