@@ -406,32 +406,35 @@ http_response_printf(HttpResponse *res, const char *format, ...)
 {
   va_list ap;
   char    *tmp = NULL;
+  int     len;
 
   va_start(ap,format);
-  vasprintf(&tmp, format, ap);
+  len = vasprintf(&tmp, format, ap);
   va_end(ap);
 
-  if ((res->data_len + strlen(tmp) + 1) < res->data_len_alloced)
+  if ((res->data_len + len + 1) < res->data_len_alloced)
     {
-      if (res->data_len)
-	memcpy(res->data + res->data_len - 1, tmp, strlen(tmp)+1);
-      else
-	memcpy(res->data, tmp, strlen(tmp)+1);
+      if (res->data_len) {
+	memcpy(res->data + res->data_len, tmp, len + 1);
+	res->data_len = res->data_len + len;
+      } else {
+	memcpy(res->data, tmp, len + 1);
+	res->data_len = len;
+      }
     }
   else if (!res->data_len) 		/* no data printed yet */
     {
-      res->data = malloc(strlen(tmp)+1);
-      memcpy(res->data, tmp, strlen(tmp)+1);
-      res->data_len_alloced = strlen(tmp)+1;
+      res->data = malloc(len + 1);
+      memcpy(res->data, tmp, len + 1);
+      res->data_len = res->data_len_alloced = len;
     }
   else
     {
-      res->data = realloc( res->data, res->data_len + strlen(tmp) );
-      memcpy(res->data + res->data_len - 1, tmp, strlen(tmp)+1);
-      res->data_len_alloced = res->data_len + strlen(tmp);
+      res->data = realloc(res->data, res->data_len + len + 1);
+      memcpy(res->data + res->data_len, tmp, len + 1);
+      res->data_len = res->data_len_alloced = res->data_len + len;
     }
 
-  res->data_len = strlen(res->data)+1;      
   free(tmp);
 }
 
