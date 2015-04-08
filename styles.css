@@ -1,8 +1,8 @@
 body {
   font-family: Verdana, Arial, Helvetica, sans-serif;
-  font-size: 90%;  
+  font-size: 90%;
   color: #333333;
-  margin: 2px;
+  margin: 2em;
   padding: 2px;
 }
 
@@ -114,4 +114,22 @@ a:visited {
   background:#f2f2f2;
   padding:5px;
 }
+
+/* Table of contents */
+#toc {
+  background-color: #ffe;
+  border: 1px solid #a00;
+  display: inline-block;
+  padding: .5em 0 .5em 0;
+}
+
+#toc ul {
+  margin: 2px;
+  padding: 0 1em 0 1em;
+}
+
+#toc li {
+  list-style-type: none;
+}
+
 

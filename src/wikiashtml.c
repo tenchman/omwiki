@@ -780,6 +780,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
         if ( strstr(line+2,"toc") )
         {
           int sectioncnt=0;
+	  http_response_printf(res, "<div id=\"toc\">\n");
           while ( (str_ptr=strchr(sectionlist,'\n')) )
           {
             *str_ptr='\0';
@@ -808,6 +809,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
             /* point to the next header */  
             sectionlist = str_ptr+1;
           }
+	  http_response_printf(res, "</div>");
         }
         /* entry  */
         if ( (str_ptr=strstr(line+2,"entry")) ) 
