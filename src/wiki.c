@@ -222,7 +222,24 @@ changes_compar(const struct dirent **d1, const struct dirent **d2)
       return -1;
 }
 
+static int
+dirfilter(const struct dirent *de)
+{
+  int len, ret = 0;
 
+  if (0 == (len = strlen(de->d_name))) {
+    /* */
+  } else if ('~' == de->d_name[len - 1]) {
+    /* */
+  } else if ('.' == de->d_name[0]) {
+    /* */
+  } else if (0 == strcmp(de->d_name, "styles.css")) {
+    /* */
+  } else {
+    ret = 1;
+  }
+  return ret;
+}
 
 WikiPageList**
 wiki_get_pages(int  *n_pages, char *expr)
@@ -235,16 +252,12 @@ wiki_get_pages(int  *n_pages, char *expr)
   struct group   *grp;
 
 
-  n = scandir(".", &namelist, 0, (void *)changes_compar);
+  n = scandir(".", &namelist, &dirfilter, (void *)changes_compar);
   
   pages = malloc(sizeof(WikiPageList*)*n);
 
   while(n--) 
   {
-    if ((namelist[n]->d_name)[0] == '.' 
-    || !strcmp(namelist[n]->d_name, "styles.css"))
-      goto cleanup;
-
     /* are we looking for an expression in the wiki? */
     if (expr != NULL) 
     {           
@@ -336,7 +349,7 @@ wiki_show_index_page(HttpResponse *res, char *dir)
   wiki_show_header(res, "Index", FALSE, 0);
   if (!dir) 
     dir=strdup(".");
-  n = scandir(dir, &namelist, 0, (void *)changes_compar);
+  n = scandir(dir, &namelist, &dirfilter, (void *)changes_compar);
   
   //prepare an collapsible box
   http_response_printf(res, "<div id=""wrapper""><p><a onclick=""expandcollapse('myvar%i');"" title=""Expand or collapse"">Index %i</a></p><div id=""myvar%i"">\n",numvar,numvar,numvar); 
@@ -346,10 +359,6 @@ wiki_show_index_page(HttpResponse *res, char *dir)
   {
     if ( namelist[n]->d_type == DT_REG )
     {
-      //exclude hidden and style
-      if ((namelist[n]->d_name)[0] == '.'
-          || !strcmp(namelist[n]->d_name, "styles.css"))
-        goto cleanup;
       //print link to page and page name (previous pages are not printed)
       if ( !strstr(namelist[n]->d_name,".prev.") ) {
 		//box is full so create a new one
@@ -365,8 +374,6 @@ wiki_show_index_page(HttpResponse *res, char *dir)
         http_response_printf(res, "<li><a href='%s'>%s</a></li>\n", namelist[n]->d_name, namelist[n]->d_name); 
         count_files++;
       }
-        
-      cleanup:
       free(namelist[n]);
     }
   } //end while
