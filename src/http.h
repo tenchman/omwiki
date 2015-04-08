@@ -70,10 +70,4 @@ http_response_send_headers(HttpResponse *res);
 void
 http_response_send(HttpResponse *res);
 
-void
-sigint(int sig);
-
-void
-sigterm(int sig);
-
 #endif

@@ -546,8 +546,8 @@ http_response_send_bigfile
 ** SIGINT handler.
 */
 
-void  
-sigint(int sig)
+static void __attribute__((noreturn))
+sigint(__attribute__((unused))int sig)
 {
   printf("\nDidiwiki stopped.\n");
   syslog(LOG_LOCAL0|LOG_INFO, "Didiwiki stopped.\n");
@@ -562,8 +562,8 @@ sigint(int sig)
 /*
 ** SIGTERM handler
 */
-void
-sigterm(int sig)
+static void __attribute__((noreturn))
+sigterm(__attribute__((unused))int sig)
 {
   printf("\nDidiwiki stopped.\n");
   syslog(LOG_LOCAL0|LOG_INFO, "Didiwiki stopped.\n");
