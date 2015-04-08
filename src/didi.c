@@ -8,7 +8,7 @@ int lgindex; //declared external in wiki.c
 
 int
 usage()
-{ 
+{
   fprintf(stderr, "Usage: didiwiki [options]\n");
   fprintf(stderr, "   -a, --autologin       : login localhost automatically\n");
   fprintf(stderr, "   -n, --nologin         : login automatically all users\n");
@@ -24,7 +24,24 @@ usage()
   exit(1);
 }
 
-int 
+static struct addrinfo *addressinfo(char *listenaddr)
+{
+  struct addrinfo hints;
+  struct addrinfo *result;
+
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_protocol = IPPROTO_TCP;
+  hints.ai_flags = AI_CANONNAME;
+
+  if (0 == getaddrinfo(listenaddr, NULL, &hints, &result)) {
+    return result;
+  }
+  return NULL;
+}
+
+int
 main(int argc, char **argv)
 {
   HttpRequest    *req  = NULL;
@@ -32,7 +49,8 @@ main(int argc, char **argv)
   int             c;
   char           *didiwiki_home = NULL;
   int             restore_WikiHelp = 0;
-  struct in_addr address;
+  char           *listenaddr = "0.0.0.0"; /* by default bind server to "0.0.0.0" */
+  struct addrinfo *ai;
 
   /* default values */
   debug = 0; //normal mode
@@ -41,12 +59,9 @@ main(int argc, char **argv)
   dosendmail = 0; //don't send systematically email at each registration
   lgindex = 20; //print 20 files before to make a new index box
 
-  /* by default bind server to "0.0.0.0" */
-  address.s_addr = inet_addr("0.0.0.0");
-
   while (1)
   {
-    static struct option long_options[] = 
+    static struct option long_options[] =
     {
       {"autologin",  no_argument,   0, 'a'},
       {"nologin",  no_argument,     0, 'n'},
@@ -64,7 +79,7 @@ main(int argc, char **argv)
 
     /* getopt_long stores the option index here */
     int option_index = 0;
-    
+
     c = getopt_long (argc, argv, "adl:p:h:i:rsv", long_options, &option_index);
 
     /* detect the end of the options */
@@ -79,7 +94,7 @@ main(int argc, char **argv)
         lgindex = atoi(optarg);
         if (lgindex==0) lgindex=20;
         fprintf(stderr,"Index length = %i\n",lgindex);
-        break;   
+        break;
       case 'a': //autologin for the localhost
         hostlogin = 1;
         fprintf(stderr,"Localhost is logged in.\n");
@@ -87,29 +102,24 @@ main(int argc, char **argv)
       case 'n': //autologin any user
         nologin = 1;
         fprintf(stderr,"Any user registrered or not will be logged in.\n");
-        break;  
+        break;
       case 'd':
         debug = 1;
-        break;      
+        break;
       case 'v':
         printf("CiWiki alias DidiWiki - version %s\n\n",VERSION);
-        return 0;         
+        return 0;
       case 'p': //default port is 8000
         port = atoi(optarg);
-        break;   
+        break;
       case 'h': //default home directory is ~/.didiwiki
         didiwiki_home = optarg;
         break;
       case 'l': //listen a inet address
-        if(inet_aton(optarg,&address) == 0) 
-        {
-          fprintf(stderr, "didiwiki: invalid ip address \"%s\"\n", optarg);
-          exit(1);
-        } else
-          address.s_addr = inet_addr(optarg);
+	listenaddr = optarg;
         break;
       case 'r': //rewrite Wikihelp page
-        restore_WikiHelp=1; 
+        restore_WikiHelp=1;
         break;
       case 's':
         dosendmail= 1;
@@ -122,15 +132,19 @@ main(int argc, char **argv)
     }
   } //end while
 
+  if (NULL == (ai = addressinfo(listenaddr))) {
+    printf("didiwiki: invalid ip address \"%s\"\n", listenaddr);
+    exit(1);
+  }
   wiki_init(didiwiki_home,restore_WikiHelp);
 
   if (debug)
   {
     req = http_request_new();   /* reads request from stdin */
   }
-  else 
+  else
   {
-    req = http_server(address, port);    /* forks here */
+    req = http_server(ai, port);    /* forks here */
   }
 
   wiki_handle_http_request(req);

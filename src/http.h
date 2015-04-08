@@ -1,12 +1,16 @@
 #ifndef _HAVE_HTTP_HEADER
 #define _HAVE_HTTP_HEADER
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+
 typedef struct HttpResponse     HttpResponse;
 typedef struct HttpRequest      HttpRequest;
 typedef struct HttpRequestParam HttpRequestParam;
 
 HttpRequest*
-http_server(struct in_addr address, int iPort);
+http_server(struct addrinfo *ai, int iPort);
 
 HttpRequest*
 http_request_new(void);

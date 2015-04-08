@@ -586,7 +586,7 @@ sigterm(int sig)
 ** Implement an HTTP server daemon.
 */
 HttpRequest*
-http_server(struct in_addr address, int iPort)
+http_server(struct addrinfo *ai, int iPort)
 {
   int                listener;      /* The server socket */
   int                connection;    /* A socket for each connection */
@@ -595,7 +595,6 @@ http_server(struct in_addr address, int iPort)
   int                child;         /* PID of the child process */
   int                nchildren = 0; /* Number of child processes */
   struct timeval     delay;         /* How long to wait inside select() */
-  struct sockaddr_in inaddr;        /* The socket address */
   int                reuse = 1;
   int                n = 0;
   char               url_prefix[256];
@@ -606,11 +605,7 @@ http_server(struct in_addr address, int iPort)
   /* catch SIGTERM */
   (void) signal(SIGTERM, sigterm);
 
-  memset(&inaddr, 0, sizeof(inaddr));
-  inaddr.sin_family = AF_INET;
-  inaddr.sin_addr.s_addr = address.s_addr;
-  inaddr.sin_port = htons(iPort);
-  listener = socket(AF_INET, SOCK_STREAM, 0);
+  listener = socket(ai->ai_family, SOCK_STREAM, 0);
 
   fprintf(stderr,"DidiWiki firing up ...\n");
 
@@ -626,11 +621,12 @@ http_server(struct in_addr address, int iPort)
 
   while (n < 10)
   {
-    fprintf(stderr,"Attempting to bind to %s:%i .. ", inet_ntoa(address), iPort);
+    fprintf(stderr,"Attempting to bind to %s:%i .. ", ai->ai_canonname, iPort);
 
-    inaddr.sin_port = htons(iPort + n);
+    /* same offset for AF_INET and AF_INET6 */
+    ((struct sockaddr_in *)ai->ai_addr)->sin_port = htons(iPort + n);
 
-    if( bind(listener, (struct sockaddr*)&inaddr, sizeof(inaddr)) < 0 )
+    if (bind(listener, ai->ai_addr, ai->ai_addrlen) < 0 )
     {
       fprintf(stderr,"Failed! \n");
       n++;
@@ -647,14 +643,14 @@ http_server(struct in_addr address, int iPort)
     exit(1);
   }
 
-  fprintf(stderr,"DidiWiki Started. Please point your browser at %s:%i\n", inet_ntoa(address), iPort);
+  fprintf(stderr,"DidiWiki Started. Please point your browser at %s:%i\n", ai->ai_canonname, iPort);
 
   /* log starting information */
   openlog("didiwiki", 0, 0);
   syslog(LOG_LOCAL0|LOG_INFO, "started with PID %d", getpid());
 
   /* Set DIDIWIKI_URL_PREFIX if not already set - rss uses it */
-  snprintf(url_prefix, 256, "%s:%i/", inet_ntoa(address), iPort+n);
+  snprintf(url_prefix, 256, "%s:%i/", ai->ai_canonname, iPort+n);
   setenv("DIDIWIKI_URL_PREFIX", url_prefix , 0);
 
   listen(listener,10);
@@ -673,10 +669,10 @@ http_server(struct in_addr address, int iPort)
     FD_ZERO(&readfds);
     FD_SET( listener, &readfds);
 
-    if( select( listener+1, &readfds, 0, 0, &delay) )
+    if (select( listener+1, &readfds, 0, 0, &delay) )
     {
-      lenaddr = sizeof(inaddr);
-      connection = accept(listener, (struct sockaddr*)&inaddr, &lenaddr);
+      lenaddr = ai->ai_addrlen;
+      connection = accept(listener, ai->ai_addr, &lenaddr);
       if( connection>=0 )
       {
         child = fork();
