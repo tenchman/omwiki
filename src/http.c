@@ -52,6 +52,29 @@ struct HttpResponse
   string_t data;
 };
 
+static int
+string_append(string_t *st, char *data, size_t datalen)
+{
+  size_t len = st->len + datalen;
+  char *s;
+  int ret = -1;
+
+  /**
+   * No need to do some ptr magic like 'if (st->s == NULL)' since
+   * NULL pointers are handled by realloc() gracefully.
+  **/
+  if (NULL == (s = realloc(st->s, len + 1))) {
+    /* OOM */
+  } else {
+    /* copy with terminationg '\0' */
+    memcpy(s + st->len, data, datalen + 1);
+    st->s = s;
+    st->len = st->total = len;
+    ret = 0;
+  }
+  return ret;
+}
+
 /*
 ** Send a reply indicating that the HTTP request was malformed
 */
@@ -382,21 +405,14 @@ http_response_set_content_type(HttpResponse *res, char *type)
 void
 http_response_append_header(HttpResponse *res, char *header)
 {
-  int len = strlen(header); /* include terminating '\0' */
-  char *s;
+  int len;
 
   if (NULL == header) {
     /* missing header */
   } else if (0 == (len = strlen(header))) {
     /* zero sized header */
-  } else if (NULL == (s = realloc(res->extra_headers.s,
-			   res->extra_headers.len + len + 1))) {
+  } else if (-1 == string_append(&res->extra_headers, header, len)) {
     syslog(LOG_LOCAL0|LOG_ERR, "%s: memory allocation failed", __func__);
-  } else {
-    memcpy(s + res->extra_headers.len, header, len + 1);
-    res->extra_headers.len += len;
-    res->extra_headers.s = s;
-    res->extra_headers.total = res->extra_headers.len;
   }
 }
 
@@ -420,29 +436,7 @@ http_response_printf(HttpResponse *res, const char *format, ...)
   len = vasprintf(&tmp, format, ap);
   va_end(ap);
 
-  if ((res->data.len + len + 1) < res->data.total)
-    {
-      if (res->data.len) {
-	memcpy(res->data.s + res->data.len, tmp, len + 1);
-	res->data.len += len;
-      } else {
-	memcpy(res->data.s, tmp, len + 1);
-	res->data.len = len;
-      }
-    }
-  else if (!res->data.len) 		/* no data printed yet */
-    {
-      res->data.s = malloc(len + 1);
-      memcpy(res->data.s, tmp, len + 1);
-      res->data.len = res->data.total = len;
-    }
-  else
-    {
-      res->data.s = realloc(res->data.s, res->data.len + len + 1);
-      memcpy(res->data.s + res->data.len, tmp, len + 1);
-      res->data.len = res->data.total = res->data.len + len;
-    }
-
+  string_append(&res->data, tmp, len);
   free(tmp);
 }
 
