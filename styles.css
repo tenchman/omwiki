@@ -118,7 +118,7 @@ a:visited {
 /* Table of contents */
 #toc {
   background-color: #ffe;
-  border: 1px solid #a00;
+  border: 1px solid #aaa;
   display: inline-block;
   padding: .5em 0 .5em 0;
 }
@@ -131,5 +131,3 @@ a:visited {
 #toc li {
   list-style-type: none;
 }
-
-
