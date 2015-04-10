@@ -392,7 +392,7 @@ wiki_parse_between_braces(char *s)
 }
 
 void
-search_header(char **sectionlist,char *raw_page_data)
+prepare_toc(char **sectionlist,char *raw_page_data)
 /* create a list of header, will be used by {{toc}} */
 {
   int header = 0;
@@ -474,7 +474,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
   };
 
 
-  search_header( &sectionlist, raw_page_data);
+  prepare_toc(&sectionlist, raw_page_data);
 
   q = p;  /* p accumulates non marked up text, q is just a pointer
        * to the end of the current line - used by below func. 
