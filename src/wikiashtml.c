@@ -579,7 +579,6 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
       {
         if (pre_on)
         {
-          http_response_printf(res, "\n") ;
           continue;
         }
         else if (open_para)
