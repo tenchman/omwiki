@@ -71,7 +71,7 @@ file_write(char *filename, char *data)
   {
     /* previous page restored as current page */
     strcpy(filename_prev,filename);
-    *strstr(filename,".prev.1")='\0'; //remove ext
+    *strstr(filename,".prev.1")='\0'; /* remove ext */
     rename(filename,filename_prev);
   }
   else
@@ -288,7 +288,7 @@ wiki_get_pages(int  *n_pages, char *expr)
 
     cleanup:
       free(namelist[n]);
-  } //end while
+  } /* end while */
 
   *n_pages = i;
 
@@ -351,7 +351,7 @@ wiki_show_index_page(HttpResponse *res, char *dir)
     dir=strdup(".");
   n = scandir(dir, &namelist, &dirfilter, (void *)changes_compar);
   
-  //prepare an collapsible box
+  /* prepare an collapsible box */
   http_response_printf(res, "<div id=""wrapper""><p><a onclick=""expandcollapse('myvar%i');"" title=""Expand or collapse"">Index %i</a></p><div id=""myvar%i"">\n",numvar,numvar,numvar); 
   http_response_printf(res, "<ul>\n");
   
@@ -359,7 +359,7 @@ wiki_show_index_page(HttpResponse *res, char *dir)
   {
     if ( namelist[n]->d_type == DT_REG )
     {
-      //print link to page and page name (previous pages are not printed)
+      /* print link to page and page name (previous pages are not printed) */
       if ( !strstr(namelist[n]->d_name,".prev.") ) {
 		//box is full so create a new one
 		if (count_files >=lgindex) {
@@ -376,7 +376,7 @@ wiki_show_index_page(HttpResponse *res, char *dir)
       }
       free(namelist[n]);
     }
-  } //end while
+  } /* end while */
   http_response_printf(res, "</div></div>\n");
   http_response_printf(res, "</ul>\n");
   free(namelist);
@@ -654,7 +654,7 @@ wiki_handle_http_request(HttpRequest *req)
          !strcasecmp(str_ptr, ".pdf") )
     {
       http_response_send_smallfile(res, page+1, "image/ico", 1000000);
-      //http_response_send_bigfile(res, page+1, "image/ico");
+      /* http_response_send_bigfile(res, page+1, "image/ico"); */
       exit(0);
     }
     /* check if it's a package or compressed file */
@@ -700,7 +700,7 @@ wiki_handle_http_request(HttpRequest *req)
     
     string[255]='\0';
     status=0;
-    //upload doesn't work yet!
+    /* upload doesn't work yet! */
     if ( (pop = popen("/usr/local/bin/upload.exe", "w")) )
     {
       while (fgets(string, 255, pop) != NULL)
@@ -963,10 +963,10 @@ wiki_handle_http_request(HttpRequest *req)
         wiki_show_diff_between_pages(res, page, 2);  
       else
         wiki_show_changes_page(res);
-      autorized=0; //return to a secure mode
+      autorized=0; /* return to a secure mode */
     }
     else
-        wiki_page_forbiden(res); //err msg and exit
+        wiki_page_forbiden(res); /* err msg and exit */
   }
   else if (!strcmp(page, "ChangesRss"))
   {
@@ -1000,7 +1000,7 @@ wiki_handle_http_request(HttpRequest *req)
       }
     }
     else
-      wiki_page_forbiden(res); //err msg and exit
+      wiki_page_forbiden(res); /* err msg and exit */
   }
   else
   {
@@ -1014,16 +1014,16 @@ wiki_handle_http_request(HttpRequest *req)
       /* log read page name and IP address */
       syslog(LOG_LOCAL0|LOG_INFO, "page %s viewed from %s", page, http_request_get_ip_src(req));
     } 
-    else private=0; //page doesn't exit yet,so no privacy that allows to save the new page
+    else private=0; /* page doesn't exit yet,so no privacy that allows to save the new page */
 
     /* Add entry */
     if ( !strcmp(command, "entry") )
     {
       if ( http_request_param_get(req, "add") )
       {
-        value = http_request_param_get(req, "datafield"); //need the field of data
-        char *newdata = http_request_param_get(req, "data"); //data to add 
-        wikitext = wiki_add_entry(page, newdata, value); //insert in the page
+        value = http_request_param_get(req, "datafield"); /* need the field of data */
+        char *newdata = http_request_param_get(req, "data"); /* data to add  */
+        wikitext = wiki_add_entry(page, newdata, value); /* insert in the page */
         file_write(page, wikitext);
       }
       else if ( http_request_param_get(req, "delete") )
@@ -1061,7 +1061,7 @@ wiki_handle_http_request(HttpRequest *req)
         }
       }
       else
-        wiki_page_forbiden(res); //err msg and exit
+        wiki_page_forbiden(res); /* err msg and exit */
     }
     /* permission can be required */
     else if ( !strcmp(command, "edit") || !strcmp(command, "create") )
@@ -1092,7 +1092,7 @@ wiki_handle_http_request(HttpRequest *req)
         }
       }
       else
-        wiki_page_forbiden(res); //err msg and exit
+        wiki_page_forbiden(res); /* err msg and exit */
     }
     else 
     /* there's no command */
@@ -1113,7 +1113,7 @@ wiki_handle_http_request(HttpRequest *req)
           wiki_redirect(res, buf);
         }
         else
-          wiki_page_forbiden(res); //err msg and exit
+          wiki_page_forbiden(res); /* err msg and exit */
       }
     }
   } 

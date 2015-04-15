@@ -192,7 +192,7 @@ char*
 http_request_checkbox_get(HttpRequest *req)
 {
   int i,lenght=0;
-  static char string[1000]; //!limitation
+  static char string[1000]; /* !limitation */
 
   string[0]='\0';
   for (i=0; i<req->n_params; i++)
@@ -200,7 +200,7 @@ http_request_checkbox_get(HttpRequest *req)
     {
       lenght+=strlen(req->params[i].key+8);
       lenght+=strlen(req->params[i].val);
-      if (lenght > 999) break; //!silent bug
+      if (lenght > 999) break; /* !silent bug */
       strcat(string,req->params[i].key+8);
       strcat(string,"=");
       strcat(string,req->params[i].val);
@@ -257,16 +257,16 @@ http_request_new(void)
     malformed_request(1, "Empty request");
 
   if ((token = util_extract_token(request_line, &z)) == NULL)
-    malformed_request(2, request_line); //not token
+    malformed_request(2, request_line); /* not token */
 
   if(!(!strcmp(token,"GET") || !strcmp(token,"POST") || !strcmp(token,"HEAD")))
-    malformed_request(3, token); //token not accepted
+    malformed_request(3, token); /* token not accepted */
 
   putenv("GATEWAY_INTERFACE=CGI/1.0");
   putenv(util_mprintf("REQUEST_METHOD=%s",token));
 
   if ((token = util_extract_token(z, &z)) == NULL)
-    malformed_request(4, z); //no uri
+    malformed_request(4, z); /* no uri */
 
   putenv(util_mprintf("REQUEST_URI=%s", token));
 

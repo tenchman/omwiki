@@ -1,10 +1,10 @@
 #include "didi.h"
 
 static int debug;
-int hostlogin; //declared external in wikilogin.c
-int nologin; //declared external in wikilogin.c
-int dosendmail; //declared external in wikilogin.c
-int lgindex; //declared external in wiki.c
+int hostlogin; /* declared external in wikilogin.c */
+int nologin; /* declared external in wikilogin.c */
+int dosendmail; /* declared external in wikilogin.c */
+int lgindex; /* declared external in wiki.c */
 
 int
 usage()
@@ -53,11 +53,11 @@ main(int argc, char **argv)
   struct addrinfo *ai;
 
   /* default values */
-  debug = 0; //normal mode
-  hostlogin = 0; //host will have to login
-  nologin = 0; //users will have to login.
-  dosendmail = 0; //don't send systematically email at each registration
-  lgindex = 20; //print 20 files before to make a new index box
+  debug = 0; /* normal mode */
+  hostlogin = 0; /* host will have to login */
+  nologin = 0; /* users will have to login. */
+  dosendmail = 0; /* don't send systematically email at each registration */
+  lgindex = 20; /* print 20 files before to make a new index box */
 
   while (1)
   {
@@ -90,16 +90,16 @@ main(int argc, char **argv)
     {
       case 0:
         break;
-      case 'i': //set index length
+      case 'i': /* set index length */
         lgindex = atoi(optarg);
         if (lgindex==0) lgindex=20;
         fprintf(stderr,"Index length = %i\n",lgindex);
         break;
-      case 'a': //autologin for the localhost
+      case 'a': /* autologin for the localhost */
         hostlogin = 1;
         fprintf(stderr,"Localhost is logged in.\n");
         break;
-      case 'n': //autologin any user
+      case 'n': /* autologin any user */
         nologin = 1;
         fprintf(stderr,"Any user registrered or not will be logged in.\n");
         break;
@@ -109,16 +109,16 @@ main(int argc, char **argv)
       case 'v':
         printf("CiWiki alias DidiWiki - version %s\n\n",VERSION);
         return 0;
-      case 'p': //default port is 8000
+      case 'p': /* default port is 8000 */
         port = atoi(optarg);
         break;
-      case 'h': //default home directory is ~/.didiwiki
+      case 'h': /* default home directory is ~/.didiwiki */
         didiwiki_home = optarg;
         break;
-      case 'l': //listen a inet address
+      case 'l': /* listen a inet address */
 	listenaddr = optarg;
         break;
-      case 'r': //rewrite Wikihelp page
+      case 'r': /* rewrite Wikihelp page */
         restore_WikiHelp=1;
         break;
       case 's':
@@ -130,7 +130,7 @@ main(int argc, char **argv)
       default:
         usage();
     }
-  } //end while
+  } /* end while */
 
   if (NULL == (ai = addressinfo(listenaddr))) {
     printf("didiwiki: invalid ip address \"%s\"\n", listenaddr);

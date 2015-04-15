@@ -84,13 +84,13 @@ wikilogin_logoff(char *ipsrc)
           fseek(fp,-(strlen(line)),SEEK_CUR);
           fputc('*',fp);
           fclose(fp);
-          return; //done
+          return; /* done */
         }
       }
     }
     fclose(fp);
   }
-  //there is a problem if we exit here!
+  /* there is a problem if we exit here! */
 }
 
 /* remove dead ip - one loop */
@@ -102,7 +102,7 @@ wikilogin_cleanpermission(void)
   char *str_ptr;
   long val;
   /* cancel ip after a while without page read */
-  long now=(time(NULL)/60)-DISCONNECT; //defined in didi.h
+  long now=(time(NULL)/60)-DISCONNECT; /* defined in didi.h */
   
   /*  search */
   if ((fp = fopen(ACCESSFOLDER"/.session.txt", "r+"))) 
@@ -115,8 +115,8 @@ wikilogin_cleanpermission(void)
         str_ptr++;
         while (*str_ptr == ' ')
           str_ptr++;
-        val= atol(str_ptr); //time last page read
-        if ( val != 0 && val < now) //nothing for a while? 
+        val= atol(str_ptr); /* time last page read */
+        if ( val != 0 && val < now) /* nothing for a while?  */
         {
           /* mark this address dead */
           fseek(fp,-(strlen(line)),SEEK_CUR);
@@ -152,7 +152,7 @@ wikilogin_setpermission(char *ipsrc, char *username)
       if ( !strncmp(line,ipsrc,lgipsrc) )
       {
         fclose(fp);
-        return; // already logged, nothing to do!
+        return; /*  already logged, nothing to do! */
       }
     }
     /* search for a dead ip and replace it */
@@ -164,7 +164,7 @@ wikilogin_setpermission(char *ipsrc, char *username)
         fseek(fp,-(strlen(line)), SEEK_CUR);
         fprintf(fp,"%32s:%16li:%24s\n", ipsrc, time(NULL)/60, username);
         fclose(fp);
-        return; //ip recorded
+        return; /* ip recorded */
       }
     }
   }
@@ -172,7 +172,7 @@ wikilogin_setpermission(char *ipsrc, char *username)
   fp = fopen(ACCESSFOLDER"/.session.txt", "a");
   fprintf(fp,"%32s:%16li:%24s\n", ipsrc, time(NULL)/60, username); 
   fclose(fp);
-  return; //ip recorded
+  return; /* ip recorded */
 }
 
 /* routine with two loops - called at each page */
@@ -192,7 +192,7 @@ wikilogin_getpermission(char *ipsrc)
       if ( !strncmp(line,ipsrc,lgipsrc) )
       {
         fclose(fp);
-        return 0; // refused
+        return 0; /*  refused */
       }
     fclose(fp);
   }
@@ -215,7 +215,7 @@ wikilogin_getpermission(char *ipsrc)
       if ( !strncmp(line,ipsrc,lgipsrc) )
       {
         fclose(fp);
-        return 1; // accepted
+        return 1; /*  accepted */
       }
     fclose(fp);
   }
@@ -309,7 +309,7 @@ wikilogin_isvalid(char *username, char *password,
       if ( !strncmp(line,ipsrc,lgipsrc) )
       {
         fclose(fp);
-        return 0; // refused
+        return 0; /*  refused */
       }
     fclose(fp);
   }
@@ -327,18 +327,18 @@ wikilogin_isvalid(char *username, char *password,
           fclose(fp);
           if ( (str_ptr=strchr(line,' ')) &&
             !strncmp(str_ptr+1,pwd,lgpwd) )
-            return 1; //okay
+            return 1; /* okay */
           else
-            return -10; //wrong password
+            return -10; /* wrong password */
         }
       fclose(fp);
-      return -20; //username not found
+      return -20; /* username not found */
     }
     else
     {
       /* store in log file */
       syslog(LOG_LOCAL0|LOG_INFO, "Error: cannot open login.txt");  
-      return -20; //perhaps the first user
+      return -20; /* perhaps the first user */
     }
   }
   
@@ -351,7 +351,7 @@ wikilogin_isvalid(char *username, char *password,
       if ( !strncmp(line,username,lgusr) )
       {
         fclose(fp);
-        return -30; //sorry existing username
+        return -30; /* sorry existing username */
       }
   }
   
@@ -360,13 +360,13 @@ wikilogin_isvalid(char *username, char *password,
     return -35;
   
   /* is it a valid code ? */
-  sprintf(codeok,"%llx",hash(username)); //access code with username
+  sprintf(codeok,"%llx",hash(username)); /* access code with username */
   if ( code && strcmp(code,codeok) != 0 )
   {
     /* new registrations are in ~/newwikiusers.txt */
     snprintf(newusersfile, 512, "%s/newwikiusers.txt", getenv("HOME"));
     if ( !(fp = fopen(newusersfile, "a")) )
-      return -100; //check write permission!
+      return -100; /* check write permission! */
     fprintf(fp, "U:%s P:%s M:%s I:%s T:%li C:%s\n",
           username,password,email,
           ipsrc,time(NULL)/60,codeok); 
@@ -376,11 +376,11 @@ wikilogin_isvalid(char *username, char *password,
 		///* system calls sh script to send an email */
 		//{
 		//  snprintf(sendmailcmd, 512, "%s%s", getenv("HOME"),SCRIPTMAIL);
-		//  system(sendmailcmd);  //system is not secure execl is better
+		//  system(sendmailcmd);  /* system is not secure execl is better */
 		//}
 		//no login yet (user will have to return with the validation code)
 		//return  -40;
-   	    //}
+   	    /* } */
    
     if ( dosendmail )
     /* call sh script to send email */
@@ -400,7 +400,7 @@ wikilogin_isvalid(char *username, char *password,
             }
             else
             {
-			   //mail immediatly sent and user will have return with the validation code)	
+			   /* mail immediatly sent and user will have return with the validation code)	 */
               return -40;
             }
         
@@ -414,7 +414,7 @@ wikilogin_isvalid(char *username, char *password,
             syslog(LOG_LOCAL0|LOG_INFO, "Sendmail pid=%i\n",pid);
       }
     }
-    //mail is not immediatly sent but user will have to return with the validation code!
+    /* mail is not immediatly sent but user will have to return with the validation code! */
     return -40;
   }
    
@@ -423,13 +423,13 @@ wikilogin_isvalid(char *username, char *password,
   {
     /* add a new user */
     if (!(fp = fopen(ACCESSFOLDER"/.login.txt", "a+"))) 
-      return -100; //check write permission!
+      return -100; /* check write permission! */
 
     fprintf(fp, "%s %s %s %s %li %i %i\n",
             username,pwd,email,
             ipsrc,time(NULL)/60,permission,activate); 
     fclose(fp);
-    return 1; //account created
+    return 1; /* account created */
   }
   
   /* There's something wrong if we arrive here! */
@@ -478,24 +478,24 @@ char *wikirac_isvalid(char *command, char *ipsrc)
   else return NULL;
   
   /* is it a valid code ? */
-  sprintf(codeok,"%llx",hash(username)); //access code with username
+  sprintf(codeok,"%llx",hash(username)); /* access code with username */
   if ( strcmp(code,codeok) == 0 )
   {
     sprintf(pwd,"%016llx",hash(password));
     
     /* add a new user */
     if (!(fp = fopen(ACCESSFOLDER"/.login.txt", "a+"))) 
-      return NULL; //check write permission!
+      return NULL; /* check write permission! */
 
     fprintf(fp, "%s %s %s %s %li %i %i\n",
           username,pwd,email,
           ipsrc,time(NULL)/60,permission,activate); 
     fclose(fp);
     
-    return username; //account created
+    return username; /* account created */
   }
   else
-    return NULL; //wrong code
+    return NULL; /* wrong code */
 }
 
 char 
@@ -546,11 +546,11 @@ wikilogin_chgpwd(char *ipsrc, char *password, char *newpassword)
   int i;
   int lgpwd = strlen(newpassword);
   
-  if ( lgpwd < 8) return(-1); //new password too short
-  if (lgpwd > 24) return(-3); //new password too long
+  if ( lgpwd < 8) return(-1); /* new password too short */
+  if (lgpwd > 24) return(-3); /* new password too long */
  
   for (i=0; i<lgpwd; i++)
-    if (isspace(newpassword[i]))  //no space
+    if (isspace(newpassword[i]))  /* no space */
       return -2;
   
   username = wikilogin_username(ipsrc);
@@ -560,8 +560,8 @@ wikilogin_chgpwd(char *ipsrc, char *password, char *newpassword)
   sprintf(newpwd,"%016llx",hash(newpassword)); 
   
   /* store in log file */
-  //syslog(LOG_LOCAL0|LOG_INFO, "OPWD:<%s><%s>***NPWD:<%s><%s>",
-  //        password,pwd,newpassword,newpwd);  
+  /* syslog(LOG_LOCAL0|LOG_INFO, "OPWD:<%s><%s>***NPWD:<%s><%s>", */
+  /*         password,pwd,newpassword,newpwd);   */
   
   /*  search */
   if ((fp = fopen(ACCESSFOLDER"/.login.txt", "r+"))) 
@@ -575,17 +575,17 @@ wikilogin_chgpwd(char *ipsrc, char *password, char *newpassword)
           fseek(fp,1-(strlen(str_ptr)), SEEK_CUR);
           fprintf(fp, "%s",newpwd);
           fclose(fp);
-          return 1; //okay
+          return 1; /* okay */
         }
         else
         {
           fclose(fp);
-          return -10; //wrong password
+          return -10; /* wrong password */
         }
       }
     fclose(fp);
-    return -20; //username not found
+    return -20; /* username not found */
   }
-  return -100; //cannot open
+  return -100; /* cannot open */
 }
 

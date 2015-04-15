@@ -93,14 +93,14 @@ char *wiki_add_entry(char *filename, char *entry, char *form_nb)
           *(str_ptr1)='\0';
           strcat(str,result);
           strcat(str,movethis);
-          return str; //return the new page
+          return str; /* return the new page */
         }    
       }
     }
     else
       str_ptr1 = str_ptr0;
   }
-  return str; //tag not found, return page unchanged
+  return str; /* tag not found, return page unchanged */
 }
 
 /* need to be improved */
@@ -140,7 +140,7 @@ char *wiki_delete_entry(char *filename, char *list)
       lg=0;
       
     index[lg]='\0';
-    str_ptr1 = str_ptr2+1; //point the value
+    str_ptr1 = str_ptr2+1; /* point the value */
     
     if( (str_ptr2=strchr(str_ptr1,';')) )
     {
@@ -149,10 +149,10 @@ char *wiki_delete_entry(char *filename, char *list)
       else
         value = 0;
           
-      str_ptr1 = str_ptr2+1; //point the next index
+      str_ptr1 = str_ptr2+1; /* point the next index */
     }
     else
-      break; //!end of the loop if we are here, there is a bug
+      break; /* !end of the loop if we are here, there is a bug */
     
     if ( value == 1 )
     {
@@ -160,8 +160,8 @@ char *wiki_delete_entry(char *filename, char *list)
        * delete extra \n and \r too.
        * !!! stict search of {{checkbox=xxxxx}} */
       lg=asprintf(&key,"{{checkbox=%s;",index);
-      if ( (str_ptr3=strstr(str,key)) ) //search the beginning
-        if ( (str_ptr4=strpbrk(str_ptr3+lg,"\n\r")) ) //search the end
+      if ( (str_ptr3=strstr(str,key)) ) /* search the beginning */
+        if ( (str_ptr4=strpbrk(str_ptr3+lg,"\n\r")) ) /* search the end */
         {
           /* if more than 2 \n or \r , extra eol will be deleted */
           i=0;
@@ -216,7 +216,7 @@ char *wiki_set_checkbox(char *filename, char *list)
       lg=0;
     index[lg]='\0';
     
-    str_ptr1 = str_ptr2+1; //point the value
+    str_ptr1 = str_ptr2+1; /* point the value */
     
     if( (str_ptr2=strchr(str_ptr1,';')) )
     {
@@ -225,10 +225,10 @@ char *wiki_set_checkbox(char *filename, char *list)
       else
         value = 0;
 
-      str_ptr1 = str_ptr2+1; //point the next index
+      str_ptr1 = str_ptr2+1; /* point the next index */
     }
     else
-      break; //!end of the loop, there is a bug
+      break; /* !end of the loop, there is a bug */
     
     /* search location of checkbox and delete the whole line 
      * stict search but {{checkbox=xxxxx;0}} is automatically created */

@@ -85,11 +85,11 @@ check_for_link(char *line, int *skip_chars)
       url = start+1; *p = '\0'; p++;
       while (  *p != ']' && *p != '\0' && !isspace(*p) ) p++;
 
-    if (isspace(*p)) //there is a title or image
+    if (isspace(*p)) /* there is a title or image */
     {
       *p = '\0';
       title = ++p; 
-      while (  *p != ']' && *p != '\0' ) //search closing braket
+      while (  *p != ']' && *p != '\0' ) /* search closing braket */
         p++;
     }
       *p = '\0';
@@ -302,14 +302,14 @@ check_for_link(char *line, int *skip_chars)
           else
             border_pic_str[0]='\0';
         
-          if (title) // case: [image link]
+          if (title) /*  case: [image link] */
             asprintf(&result, "<a href=\"%s\"><img src=\"%s\"%s%s%s></a>",
                  title, url, border_pic_str, width_pic_str, height_pic_str);
-          else // case: http://link_to_image
+          else /*  case: http://link_to_image */
             asprintf(&result, "<img src=\"%s\"%s%s%s>", 
                 url, border_pic_str, width_pic_str, height_pic_str);
       }
-      else // url or title does'nt link to an image
+      else /*  url or title does'nt link to an image */
       {
           char *extra_attr = "";
 
@@ -361,21 +361,21 @@ wiki_parse_between_braces(char *s)
       str_ptr+=6;
       pic_width=atoi(str_ptr);
     }
-    //else pic_width=0;
+    /* else pic_width=0; */
     
     if ( (str_ptr=strstr(s,"height=")) != NULL ) 
     {
       str_ptr+=7;
       pic_height=atoi(str_ptr);
     }
-    //else pic_height=0;
+    /* else pic_height=0; */
     
     if ( (str_ptr=strstr(s,"border=")) != NULL ) 
     {
       str_ptr+=7;
       pic_border=atoi(str_ptr);
     }
-    //else pic_border=0;
+    /* else pic_border=0; */
     
     if ( strstr(s,"picture=default") != NULL )
     {
@@ -400,7 +400,7 @@ prepare_toc(char **sectionlist,char *raw_page_data)
   char *p = raw_page_data;
 
   int lg = 1000;
-  *sectionlist = malloc(lg); //we can need to realloc more
+  *sectionlist = malloc(lg); /* we can need to realloc more */
    
   while ( *p != '\0' )
   {
@@ -462,7 +462,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
   
   char color_k,color_prev='\0';
   char bgcolor_k,bgcolor_prev='\0';  
-  int private; //flag 1 if access denied
+  int private; /* flag 1 if access denied */
 
 #define ULIST 0
 #define OLIST 1
@@ -602,7 +602,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
         continue;
       }
     }
-    else if ( *line == '=' ) //header
+    else if ( *line == '=' ) /* header */
     {
       section++;
       while (*line == '=')
@@ -610,12 +610,12 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
       http_response_printf(res, "<h%d id='section%i'>", header_level, section);
       p = line;
     }
-    else if ( *line == '-' && *(line+1) == '-' ) //rule
+    else if ( *line == '-' && *(line+1) == '-' ) /* rule */
     {
       http_response_printf(res, "<hr/>\n");
       while ( *line == '-' ) line++;
     }
-    else if ( *line == '\'' ) //quote
+    else if ( *line == '\'' ) /* quote */
     {
       blockquote_flag=1;
       line++;
@@ -673,12 +673,12 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
         }
         k++;
         if (*(line+k) == '}')
-          *(line+k)='\0'; //terminate the line
+          *(line+k)='\0'; /* terminate the line */
         else
           { line=line+2; continue; }
 
         /* Parse tags between double braces */
-        // need to be rewritten
+        /*  need to be rewritten */
         
         /* search image/video size */
         wiki_parse_between_braces(line+2);
@@ -689,14 +689,14 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
           {
             http_response_printf(res, "<p>--- Sorry, the access below is denied ----</p>\n");
             *p = '\0';
-            private=1; //will stop getting line
-            break; //terminate the while loop
+            private=1; /* will stop getting line */
+            break; /* terminate the while loop */
           }
         }
         /* Expand */
         if ( (str_ptr=strstr(line+2,"expand")) ) 
         {   
-          if ( *(str_ptr-1) == '-' ) //terminate expand
+          if ( *(str_ptr-1) == '-' ) /* terminate expand */
           {
             http_response_printf(res,"</div></div>\n");
           }
@@ -732,7 +732,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
         /* Collapse */
         else if ( (str_ptr=strstr(line+2,"collapse")) ) 
         {   
-          if ( *(str_ptr-1) == '-' ) //terminate expand
+          if ( *(str_ptr-1) == '-' ) /* terminate expand */
           {
             http_response_printf(res,"</div></div>\n");
           }
@@ -817,8 +817,8 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
           if (form_on)
             http_response_printf(res, "</form>\n");
           
-          form_on=1; //so we know we will have to close <form>
-          form_cnt++; //for datafield
+          form_on=1; /* so we know we will have to close <form> */
+          form_cnt++; /* for datafield */
           http_response_printf(res, 
             "<form method=POST action='%s?entry' name='entryform'>\n",page);
           
@@ -886,9 +886,9 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
             "<input type=submit name='delete' value='Delete' title='[alt-d]' accesskey='d'>\n");
         }
         
-        line+= k; //point to '\0' (the last closing brace)
-        p= line+1; //point just after '\0'
-      } //end of the double braces
+        line+= k; /* point to '\0' (the last closing brace) */
+        p= line+1; /* point just after '\0' */
+      } /* end of the double braces */
       
       /* single braces */
       else if (*line == '{' && strchr("RGBYPCD",*(line+1)) && *(line+2) == '}')

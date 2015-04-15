@@ -33,7 +33,7 @@ wiki_show_changes_page(HttpResponse *res)
   int            n_pages, i,j,m;
   char          spacing[24];
   char          *difflink;
-  int *table, *done; //alloc mem with n_pages
+  int *table, *done; /* alloc mem with n_pages */
   char *str_ptr;
   
   wiki_show_header(res, "Changes", FALSE, 0);
@@ -222,7 +222,7 @@ wiki_show_changes_page_rss(HttpResponse *res)
     wiki_print_data_as_html(res, html_clean_wikitext);
     */
     http_response_printf(res, "</description></item>\n");
-  } //end for
+  } /* end for */
 
   http_response_printf(res, "</channel>\n</rss>");
 
