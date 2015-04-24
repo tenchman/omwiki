@@ -316,7 +316,7 @@ check_for_link(char *line, int *skip_chars)
           wwwlink=0;
           if (!strncasecmp(url, "http://", 7))
           {
-            extra_attr = " title='WWW link' ";
+            extra_attr = " title='WWW link' class='externallink'";
             wwwlink=1;
           }
 
