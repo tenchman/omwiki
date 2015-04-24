@@ -90,6 +90,15 @@ a, ulink{
   display: inline;
 }
 
+a.externallink {
+  color: #228 !important;
+  border: none !important;
+}
+
+a.externallink:before {
+  content: "↗ ";
+}
+
 a:hover {
   color: #333;
   text-decoration: None;
