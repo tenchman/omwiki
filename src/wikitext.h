@@ -286,7 +286,7 @@
 "\n"                                                                   \
 "WikiLinks are formed by two or more words in /camelcase/.\n"           \
 " WikiLinks are formed by two or more words in /camelcase/.\n"          \
-"External links begin with http://, like http://www.freepan.org\n"       \
+"External links begin with !http://, like http://www.freepan.org\n"       \
 " External links begin with http://, like http://www.freepan.org\n"      \
 "Forced wiki [links] are a alphanumeric string surrounded by square brackets.\n" \
 " Forced wiki [links] are a alphanumeric string surrounded by square brackets.\n" \
