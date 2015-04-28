@@ -346,7 +346,7 @@ static int
 is_wiki_format_char_or_space(char c)
 {
   if (isspace(c)) return 1;
-  if (strchr("|/*_-", c)) return 1;
+  if (strchr(">|/*_-", c)) return 1;
   return 0;
 }
 
@@ -389,6 +389,112 @@ wiki_parse_between_braces(char *s)
     else if ( strstr(s,"wwwlink=current_tag") != NULL )
       target_wwwlink=0;
 
+}
+
+/**
+ * If you use several conflicting options like <(:)>, the last option wins.
+ *
+ * See: http://wikiwikiweb.de/HelpOnTables
+ *
+ * What we do so far:
+ *
+ *  <|x> rowspan=x
+ *  <-x> colspan=x
+ *  <^>  valign=top
+ *  <v>  valign=bottom
+ *  <)>  align=right
+ *  <(>  align=left
+ *  <:>  align=center
+ *  <#XXXXXX> bgcolor="#XXXXXX"
+ *  <XX%> width="XX%"
+ *
+ * and any combination of it (if it makes sense) see above.
+**/
+static int parse_table_attributes(const char *s, char *buf, size_t bufsize)
+{
+  const char *start = s;
+  char *end, *align = NULL, *valign = NULL;
+  int i, ret = 0, colspan = 0, rowspan = 0, bgcolor = 0, width = 0;;
+  size_t n = 0;
+
+  if ('<' != *s) {
+    /* no attributes at all */
+  } else {
+    *buf = '\0';
+    s++;
+    while (*s) {
+      switch (*s++) {
+	case '>':
+	  ret = s - start;
+	  goto endofstyle;
+	case ';':
+	  /* separator, ignore */
+	  break;
+	case ':':
+	  align = "center";
+	  break;
+	case '(':
+	  align = "left";
+	  break;
+	case ')':
+	  align = "right";
+	  break;
+	case '^':
+	  valign = "top";
+	  break;
+	case 'v':
+	  valign = "bottom";
+	  break;
+	case '-':
+	  colspan = strtol(s, &end, 10);
+	  s = end;
+	  break;
+	case '|':
+	  rowspan = strtol(s, &end, 10);
+	  s = end;
+	  break;
+	case '#':
+	  bgcolor = strtol(s, &end, 16);
+	  s = end;
+	  break;
+	case '1' ... '9':
+	  if ((i = strtol(s - 1, &end, 10)) <= 100 && '%' == *end) {
+	    width = i;
+	    s = end + 1;
+	    break;
+	  }
+	  /* fall through */
+	default:
+	  ;
+      }
+    }
+
+endofstyle:
+
+    if (NULL != align) {
+      n += snprintf(buf + n, bufsize - n, "align=\"%s\" ", align);
+    }
+    if (NULL != valign) {
+      n += snprintf(buf + n, bufsize - n, "valign=\"%s\" ", valign);
+    }
+    if (0 != colspan) {
+      n += snprintf(buf + n, bufsize - n, "colspan=%d ", colspan);
+    }
+    if (0 != rowspan) {
+      n += snprintf(buf + n, bufsize - n, "rowspan=%d ", rowspan);
+    }
+    if (0 != bgcolor) {
+      n += snprintf(buf + n, bufsize - n, "bgcolor=\"#%06x\" ", bgcolor);
+    }
+    if (0 != width) {
+      n += snprintf(buf + n, bufsize - n, "width=\"%d%%\" ", width);
+    }
+    /* cosmetic, remove trailing space */
+    if (n && n <= bufsize) {
+      buf[n - 1] = '\0';
+    }
+  }
+  return ret;
 }
 
 void
@@ -488,6 +594,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
     int   blockquote_flag = 0;
     char *line_start   = line;
     int   skip_to_content = 0;
+    char  attrbuf[1024];
     /*
      *  process any initial wiki chars at line beginning 
      */
@@ -550,12 +657,18 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
 
     if (*line == '|')
     {
+      int n;
       if (table_on==0)
         http_response_printf(res, "<table class='wikitable' cellspacing='0' cellpadding='4'>\n");
-      
-      line++;
 
-      http_response_printf(res, "<tr><td>");
+      http_response_printf(res, "<tr><td");
+      if (0 != (n = parse_table_attributes(line + 1, attrbuf, sizeof(attrbuf)))) {
+	http_response_printf(res, " %s>", attrbuf);
+	line += n;
+      } else {
+	http_response_printf(res, ">");
+      }
+      line++;
       table_on = 1;
       goto line_content;
     }
@@ -1109,9 +1222,16 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
       }
       else if (*line == '|' && table_on) /* table column */
       {
+	int n;
         *line = '\0';
 	http_response_printf(res, "%s", util_htmlize(p, &htmlbuf));
-	http_response_printf(res, "</td><td>\n");
+	http_response_printf(res, "</td><td");
+	if (0 != (n = parse_table_attributes(line + 1, attrbuf, sizeof(attrbuf)))) {
+	  http_response_printf(res, " %s>", attrbuf);
+	  line += n;
+	} else {
+	  http_response_printf(res, ">\n");
+	}
 	p = line+1;
       }
 

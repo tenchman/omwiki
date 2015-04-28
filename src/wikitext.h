@@ -335,12 +335,40 @@
 "\n"                                                                     \
 "Ordered lists work the same, but use a '#'\n"                           \
 "----\n"                                                                 \
+"==Tables\n"                                                            \
 "Tables begin the line with a '|' and before every new column after.\n"  \
 "\n"                                                                     \
 "| row:1,col:1 | row:1,col:2\n"                                          \
 "| row:2,col:1 | row:2,col:2\n"                                          \
 " | row:1,col:1 | row:1,col:2\n"                                         \
 " | row:2,col:1 | row:2,col:2\n"                                         \
+"\n" \
+"===Table attributes\n" \
+"\n" \
+"Ideas shameless stolen from http://wikiwikiweb.de/HelpOnTables\n" \
+"\n" \
+"You can use several table attributes to make your tables look more nice:\n" \
+"\n" \
+"* `<|x>` rowspan=x\n" \
+"* `<-x>` colspan=x\n" \
+"* `<^>`  valign=top\n" \
+"* `<v>`  valign=bottom\n" \
+"* `<)>`  align=right\n" \
+"* `<(>`  align=left\n" \
+"* `<:>`  align=center\n" \
+"* `<#XXXXXX>` bgcolor=\"#XXXXXX\"\n" \
+"* `<XX%>` width=\"XX%\"\n" \
+"\n" \
+"If you use several conflicting options like <(:)>, the last option wins.\n" \
+"\n" \
+"|<#ffeedd;20%:>*header 1*|<#ffeedd;40%:>*header 2*|<#ffeedd;40%:>*header 3*\n" \
+"|<-3:#dddddd>rowspan 3, centered\n" \
+"|<#AAAAFF|2v)>colspan 2, bottom|left|<|2^:>colspan 2, centered, top\n" \
+"|<)>right\n" \
+" |<#ffeedd;20%:>*header 1*|<#ffeedd;40%:>*header 2*|<#ffeedd;40%:>*header 3*\n" \
+" |<-3:#dddddd>rowspan 3, centered\n" \
+" |<#AAAAFF|2v)>colspan 2, bottom|left|<|2^:>colspan 2, centered, top\n" \
+" |<)>right\n" \
 "---\n"                                                                  \
 "Quotation begins with ' \n"                                             \
 "\n"                                                                     \
