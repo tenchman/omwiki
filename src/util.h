@@ -7,6 +7,8 @@ typedef struct {
   char *s;
 } string_t;
 
+#define STRING_ZERO { 0, 0, (char *)0 }
+
 char *
 util_mprintf(const char *format, ...);
 
@@ -20,7 +22,7 @@ char *
 util_extract_token(char *input, char **leftOver);
 
 char *
-util_htmlize(const char *in, int n);
+util_htmlize(const char *in, string_t *s);
 
 char * 
 util_httpize(const char* url);

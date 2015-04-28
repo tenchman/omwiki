@@ -433,6 +433,7 @@ int
 wiki_print_data_as_html(
 HttpResponse *res, char *raw_page_data, int autorized, char *page)
 {
+  string_t htmlbuf = STRING_ZERO;
   char *p = raw_page_data;      /* accumulates non marked up text */
   char *q = NULL, *link = NULL; /* temporary scratch stuff */
   char *line = NULL;
@@ -598,7 +599,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
         pre_on = 1;
         line = line - ( n_spaces - 1 ); /* rewind so extra spaces
                                                  they matter to pre */
-        http_response_printf(res, "%s\n", line);
+        http_response_printf(res, "%s\n", util_htmlize(line, &htmlbuf));
         continue;
       }
     }
@@ -636,7 +637,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
       if ( *line == '!' && !isspace(*(line+1))) 
       {                   /* escape next word - skip it */
         *line = '\0';
-        http_response_printf(res, "%s", p);
+        http_response_printf(res, "%s", util_htmlize(p, &htmlbuf));
         p = ++line;
 
         while (*line != '\0' && !isspace(*line)) line++;
@@ -646,7 +647,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
       /* search for link inside the line */
       else if ((link = check_for_link(line, &skip_chars)) != NULL)
       {
-        http_response_printf(res, "%s", p);
+        http_response_printf(res, "%s", util_htmlize(p, &htmlbuf));
         http_response_printf(res, "%s", link);
 
         line += skip_chars;
@@ -982,7 +983,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
         }
         bgcolor_prev = bgcolor_k;
 
-        http_response_printf(res, "%s%s\n", p, bgcolor_on ? "</SPAN>" : color_str);
+        http_response_printf(res, "%s%s\n", util_htmlize(p, &htmlbuf), bgcolor_on ? "</SPAN>" : color_str);
         bgcolor_on ^= 1; /* switch flag */
         p = line+3;
 
@@ -999,7 +1000,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
         { line++; continue; }
 
         *line = '\0';
-        http_response_printf(res, "%s%s\n", p, code_on ? "</CODE>" : "<CODE>");
+        http_response_printf(res, "%s%s\n", util_htmlize(p, &htmlbuf), code_on ? "</CODE>" : "<CODE>");
         code_on ^= 1; /* switch flag */
         p = line+1;
       }
@@ -1015,7 +1016,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
         { line++; continue; }
 
         *line = '\0';
-        http_response_printf(res, "%s%s\n", p, highlight_on ? "</SPAN>" : "<SPAN STYLE=\"background: #FFFF00\">");
+        http_response_printf(res, "%s%s\n", util_htmlize(p, &htmlbuf), highlight_on ? "</SPAN>" : "<SPAN STYLE=\"background: #FFFF00\">");
         highlight_on ^= 1; /* switch flag */
         p = line+1;
       }
@@ -1032,7 +1033,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
 
         /* bold */
         *line = '\0';
-        http_response_printf(res, "%s%s\n", p, bold_on ? "</b>" : "<b>");
+        http_response_printf(res, "%s%s\n", util_htmlize(p, &htmlbuf), bold_on ? "</b>" : "<b>");
         bold_on ^= 1; /* reset flag */
         p = line+1;
 
@@ -1048,7 +1049,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
         { line++; continue; }
         /* underline */
         *line = '\0';
-        http_response_printf(res, "%s%s\n", p, underline_on ? "</u>" : "<u>"); 
+        http_response_printf(res, "%s%s\n", util_htmlize(p, &htmlbuf), underline_on ? "</u>" : "<u>");
         underline_on ^= 1; /* reset flag */
         p = line+1;
       }
@@ -1064,7 +1065,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
            
           /* strikethrough */
           *line = '\0';
-          http_response_printf(res, "%s%s\n", p, strikethrough_on ? "</del>" : "<del>"); 
+          http_response_printf(res, "%s%s\n", util_htmlize(p, &htmlbuf), strikethrough_on ? "</del>" : "<del>");
           strikethrough_on ^= 1; /* reset flag */
           p = line+1; 
         }
@@ -1101,17 +1102,17 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
         {
           /* italic */
           *line = '\0';
-          http_response_printf(res, "%s%s\n", p, italic_on ? "</i>" : "<i>"); 
-          italic_on ^= 1; /* reset flag */
-          p = line+1; 
+	  http_response_printf(res, "%s%s\n", util_htmlize(p, &htmlbuf), italic_on ? "</i>" : "<i>");
+	  italic_on ^= 1; /* reset flag */
+	  p = line+1; 
         }
       }
       else if (*line == '|' && table_on) /* table column */
       {
         *line = '\0';
-        http_response_printf(res, "%s", p);
-        http_response_printf(res, "</td><td>\n");
-        p = line+1;
+	http_response_printf(res, "%s", util_htmlize(p, &htmlbuf));
+	http_response_printf(res, "</td><td>\n");
+	p = line+1;
       }
 
       line++;
@@ -1119,7 +1120,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
     } /* while loop, next word */
 
     if (*p != '\0')           /* accumulated text left over */
-      http_response_printf(res, "%s", p);
+      http_response_printf(res, "%s", util_htmlize(p, &htmlbuf));
 
       /* close any html tags that could be still open */
 
@@ -1163,5 +1164,6 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
   if (form_on)
     http_response_printf(res, "</form>\n");
     
+  free(htmlbuf.s);
   return private;
 }

@@ -130,14 +130,13 @@ util_extract_token(char *input, char **leftOver)
  *
  */
 char*
-util_htmlize(const char *in, int n)
+util_htmlize(const char *in, string_t *s)
 {
   int c;
-  int i = 0;
+  int n, i = 0;
   int count = 0;
-  char *out;
 
-  if( n<0 ) n = strlen(in);
+  n = strlen(in);
   while( i<n && (c = in[i])!=0 ){
     switch( c ){
       case '<':   count += 4;       break;
@@ -148,46 +147,52 @@ util_htmlize(const char *in, int n)
     }
     i++;
   }
-  i = 0;
-  out = malloc( count+1 );
-  if( out==0 ) return 0;
+
+  if (s->total < count + 1) {
+    s->s = realloc(s->s, count + 1);
+    if (NULL == s->s)
+      return 0;
+    s->total = count + 1;
+  }
+  s->len = 0; /* rewind to start */
+
   while( n-->0 && (c = *in)!=0 ){
     switch( c ){
       case '<':   
-        out[i++] = '&';
-        out[i++] = 'l';
-        out[i++] = 't';
-        out[i++] = ';';
+        s->s[s->len++] = '&';
+        s->s[s->len++] = 'l';
+        s->s[s->len++] = 't';
+        s->s[s->len++] = ';';
         break;
       case '>':   
-        out[i++] = '&';
-        out[i++] = 'g';
-        out[i++] = 't';
-        out[i++] = ';';
+        s->s[s->len++] = '&';
+        s->s[s->len++] = 'g';
+        s->s[s->len++] = 't';
+        s->s[s->len++] = ';';
         break;
       case '&':   
-        out[i++] = '&';
-        out[i++] = 'a';
-        out[i++] = 'm';
-        out[i++] = 'p';
-        out[i++] = ';';
+        s->s[s->len++] = '&';
+        s->s[s->len++] = 'a';
+        s->s[s->len++] = 'm';
+        s->s[s->len++] = 'p';
+        s->s[s->len++] = ';';
         break;
       case '"':   
-        out[i++] = '&';
-        out[i++] = 'q';
-        out[i++] = 'u';
-        out[i++] = 'o';
-        out[i++] = 't';
-        out[i++] = ';';
+        s->s[s->len++] = '&';
+        s->s[s->len++] = 'q';
+        s->s[s->len++] = 'u';
+        s->s[s->len++] = 'o';
+        s->s[s->len++] = 't';
+        s->s[s->len++] = ';';
         break;
       default:
-        out[i++] = c;
+        s->s[s->len++] = c;
         break;
     }
     in++;
   }
-  out[i] = 0;
-  return out;
+  s->s[s->len] = 0;
+  return s->s;
 }
 
 
