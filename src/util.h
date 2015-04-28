@@ -1,6 +1,12 @@
 #ifndef _HAVE_UTIL_HEADER
 #define _HAVE_UTIL_HEADER
 
+typedef struct {
+  int len;
+  int total;
+  char *s;
+} string_t;
+
 char *
 util_mprintf(const char *format, ...);
 

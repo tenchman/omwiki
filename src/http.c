@@ -36,12 +36,6 @@ struct HttpRequest
   char             *ip_src;
 };
 
-typedef struct {
-  int len;
-  int total;
-  char *s;
-} string_t;
-
 struct HttpResponse 
 {
   char *content_type;
