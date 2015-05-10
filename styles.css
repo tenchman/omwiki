@@ -32,12 +32,13 @@ body {
 
 table.wikitable {
   background-color: #fff;
+  border-spacing: 0px;
   border: 1px solid #aaa;
 }
 
 table.wikitable td {
-  background-color: #fff;
   border: 1px solid #aaa;
+  padding: 4px;
 }
 
 pre {

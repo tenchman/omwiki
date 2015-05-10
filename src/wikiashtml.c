@@ -659,7 +659,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
     {
       int n;
       if (table_on==0)
-        http_response_printf(res, "<table class='wikitable' cellspacing='0' cellpadding='4'>\n");
+        http_response_printf(res, "<table class='wikitable'>\n");
 
       http_response_printf(res, "<tr><td");
       if (0 != (n = parse_table_attributes(line + 1, attrbuf, sizeof(attrbuf)))) {
