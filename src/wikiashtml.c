@@ -507,7 +507,6 @@ prepare_toc(char **sectionlist,char *raw_page_data)
 
   int lg = 1000;
   *sectionlist = malloc(lg); /* we can need to realloc more */
-   
   while ( *p != '\0' )
   {
     /* header is '=' at the beginning of the line */
@@ -536,40 +535,30 @@ prepare_toc(char **sectionlist,char *raw_page_data)
 
 static void print_toc(HttpResponse *res, char *sectionlist)
 {
-  int n, sectioncnt = 0;
-  http_response_printf(res, "<div id=\"toc\">\n");
-  char *str_ptr;
+  int sectioncnt = 0;
+  char *eol;
 
-  while ((str_ptr = strchr(sectionlist,'\n')))
-  {
+  http_response_printf(res, "<div id=\"toc\">\n");
+  while ((eol = strchr(sectionlist,'\n'))) {
     int depth = 0;
-    *str_ptr = '\0';
+    *eol = '\0';
     sectioncnt++;
 
     /* header level */
-    while ( *sectionlist == '=' )
-    {
+    while ('=' == *sectionlist) {
       sectionlist++;
       depth++;
     }
-
-    /* indent */
-    for (n = 0; n < depth; n++)
-      http_response_printf(res, "<ul>");
-
     /* skip first ! */
     if ('!' == *sectionlist)
       sectionlist++;
 
-    http_response_printf(res, "<li><a href='#section%i'>%s</a></li>", sectioncnt, sectionlist);
-
-    /* reset indentation */
-    for (n = 0; n < depth; n++)
-      http_response_printf(res, "</ul>");
-    http_response_printf(res, "\n");
+    http_response_printf(res,
+	"<div style='padding-left: %dpx; padding-right: 15px'>"
+	"<a href='#section%i'>%s</a></div>\n", depth * 15, sectioncnt, sectionlist);
 
     /* point to the next header */
-    sectionlist = str_ptr + 1;
+    sectionlist = eol + 1;
   }
   http_response_printf(res, "</div>\n");
 }
