@@ -534,6 +534,45 @@ prepare_toc(char **sectionlist,char *raw_page_data)
   return;
 }
 
+static void print_toc(HttpResponse *res, char *sectionlist)
+{
+  int n, sectioncnt = 0;
+  http_response_printf(res, "<div id=\"toc\">\n");
+  char *str_ptr;
+
+  while ((str_ptr = strchr(sectionlist,'\n')))
+  {
+    int depth = 0;
+    *str_ptr = '\0';
+    sectioncnt++;
+
+    /* header level */
+    while ( *sectionlist == '=' )
+    {
+      sectionlist++;
+      depth++;
+    }
+
+    /* indent */
+    for (n = 0; n < depth; n++)
+      http_response_printf(res, "<ul>");
+
+    /* skip first ! */
+    if ('!' == *sectionlist)
+      sectionlist++;
+
+    http_response_printf(res, "<li><a href='#section%i'>%s</a></li>", sectioncnt, sectionlist);
+
+    /* reset indentation */
+    for (n = 0; n < depth; n++)
+      http_response_printf(res, "</ul>");
+    http_response_printf(res, "\n");
+
+    /* point to the next header */
+    sectionlist = str_ptr + 1;
+  }
+  http_response_printf(res, "</div>\n");
+}
 
 int
 wiki_print_data_as_html(
@@ -889,42 +928,14 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
             "<P><INPUT TYPE=submit VALUE=validate></P>"
             "</form></p>\n");
         }
+
         /* table of contents */
-        if ( strstr(line+2,"toc") )
+        if (strstr(line+2, "toc"))
         {
-          int sectioncnt=0;
-	  http_response_printf(res, "<div id=\"toc\">\n");
-          while ( (str_ptr=strchr(sectionlist,'\n')) )
-          {
-            *str_ptr='\0';
-            
-            sectioncnt++;
-            /* header level */
-            int item_depth = 0;
-            while ( *sectionlist == '=' ) 
-            { 
-              sectionlist++; 
-              item_depth++; 
-            }
-            /* indent */
-            for (j = 0; j < item_depth; j++)
-                http_response_printf(res, "<ul>");
-            /* skip first ! */
-            if ( *sectionlist == '!' ) 
-              sectionlist++;
-            http_response_printf(res, 
-              "<li><a href='#section%i'>%s</a></li>", 
-              sectioncnt, sectionlist);
-            /* reset indentation */
-            for (j=0; j<item_depth; j++)
-              http_response_printf(res, "</ul>\n");
-            item_depth = 0;
-            /* point to the next header */  
-            sectionlist = str_ptr+1;
-          }
-	  http_response_printf(res, "</div>");
+	  print_toc(res, sectionlist);
         }
-        /* entry  */
+
+	/* entry  */
         if ( (str_ptr=strstr(line+2,"entry")) ) 
         { 
           /* close form already opened */
