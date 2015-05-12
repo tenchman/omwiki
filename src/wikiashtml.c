@@ -1,38 +1,60 @@
 /*
  *      wikiashtml.c
- *      
+ *
  *      Copyright 2010 jp <inphilly@gmail.com>
- *      
+ *
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation; either version 2 of the License, or
  *      (at your option) any later version.
- *      
+ *
  *      This program is distributed in the hope that it will be useful,
  *      but WITHOUT ANY WARRANTY; without even the implied warranty of
  *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *      GNU General Public License for more details.
- *      
+ *
  *      You should have received a copy of the GNU General Public License
  *      along with this program; if not, write to the Free Software
  *      Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *      MA 02110-1301, USA.
  */
 /************************************************************************/
-/*  Here we translate the page in html and 'print' it. 
+/*  Here we translate the page in html and 'print' it.
  * The main function for this job is wiki_print_data_as_html()
  * HttpResponse *res contains the vars passed to the server.
  * char *raw_page_data contains the text to translate.
  * int autorized is TRUE if logged.
  * char *page is the page name.
  */
- 
+
 #include "didi.h"
 
 /* local variable */
 int pic_width=0, pic_height=0, pic_border=0;
 int expand_collapse_num=0;
 int target_wwwlink=0;
+
+typedef struct {
+  HttpResponse *res;
+  char *page;
+  char *page_data;  /* accumulates non marked up text */
+  string_t line;
+  string_t htmlbuf;
+  struct {
+    unsigned pre_on;
+    unsigned form_on;
+    unsigned bold_on;
+    unsigned code_on;
+    unsigned table_on;
+    unsigned color_on;
+    unsigned bgcolor_on;
+    unsigned italic_on;
+    unsigned underline_on;
+    unsigned highlight_on;
+    unsigned strikethrough_on;
+    unsigned int form_cnt;
+  };
+} wiki_ctx_t;
 
 static char *
 get_line_from_string(char **lines, int *line_len)
@@ -76,10 +98,10 @@ check_for_link(char *line, int *skip_chars)
   int  wwwlink;
   char border_pic_str[32]="",width_pic_str[32]="",height_pic_str[32]="";
 
-  if (*p == '[') 
+  if (*p == '[')
   /* [link] or [link title] or [image link] */
     {
-      /* XXX TODO XXX 
+      /* XXX TODO XXX
        * Allow links like [the Main page] ( covert to the_main_page )
        */
       url = start+1; *p = '\0'; p++;
@@ -88,7 +110,7 @@ check_for_link(char *line, int *skip_chars)
     if (isspace(*p)) /* there is a title or image */
     {
       *p = '\0';
-      title = ++p; 
+      title = ++p;
       while (  *p != ']' && *p != '\0' ) /* search closing braket */
         p++;
     }
@@ -99,15 +121,15 @@ check_for_link(char *line, int *skip_chars)
     /* file to dowload */
     {
       q=p;
-      start=p+5;    
+      start=p+5;
       while ( *p != '\0' && !isspace(*p) && *p != '|' ) p++;
       url = malloc(sizeof(char) * ((p - start) + 2) );
       memset(url, 0, sizeof(char) * ((p - start) + 2));
       strncpy(url, start, p - start);
       start=q;
       *start = '\0';
-      asprintf(&result, 
-       "<a href='%s'>%s</a>",url,url);       
+      asprintf(&result,
+       "<a href='%s'>%s</a>",url,url);
       *skip_chars = p - start;
       return result;
     }
@@ -115,23 +137,23 @@ check_for_link(char *line, int *skip_chars)
     /* youtube video embedded */
     {
       q=p;
-      start=p+8;    
+      start=p+8;
       while ( *p != '\0' && !isspace(*p) && *p != '|' ) p++;
       url = malloc(sizeof(char) * ((p - start) + 2) );
       memset(url, 0, sizeof(char) * ((p - start) + 2));
       strncpy(url, start, p - start);
       start=q;
       *start = '\0';
-      asprintf(&result, 
+      asprintf(&result,
       "<object width=\"480\" height=\"385\"><param name=\"movie\" value=\"%s\">"
       "</param><param name=\"allowFullScreen\" value=\"true\"></param><param name=\"allowscriptaccess\" "
       "value=\"always\"></param><embed src=\"%s\" type=\"application/x-shockwave-flash\" "
       "allowscriptaccess=\"always\" allowfullscreen=\"true\" width=\"480\" height=\"385\">"
       "</embed></object>",
-      url,url);       
+      url,url);
       *skip_chars = p - start;
       return result;
-    }   
+    }
     else if ( !strncasecmp(p, "dailymotion=", 12) )
     /* dailymotion video embedded */
     {
@@ -143,19 +165,19 @@ check_for_link(char *line, int *skip_chars)
       strncpy(url, start, p - start);
       start=q;
       *start = '\0';
-      asprintf(&result, 
+      asprintf(&result,
       "<object width=\"480\" height=\"275\"><param name=\"movie\" value=\"%s\">"
       "</param><param name=\"allowFullScreen\" value=\"true\"></param><param name=\"allowScriptAccess\" "
       "value=\"always\"></param><embed src=\"%s\" width=\"480\" height=\"275\" allowfullscreen=\"true\" "
       "allowscriptaccess=\"always\"></embed></object>",
-      url,url); 
+      url,url);
       *skip_chars = p - start;
       return result;
-    }                  
+    }
     else if ( !strncasecmp(p, "vimeo=", 6) )
     /* vimeo video embedded */
     {
-      q=p;  
+      q=p;
       start=p+6;
       while ( *p != '\0' && !isspace(*p) && *p != '|' ) p++;
       url = malloc(sizeof(char) * ((p - start) + 2) );
@@ -163,30 +185,30 @@ check_for_link(char *line, int *skip_chars)
       strncpy(url, start, p - start);
       start=q;
       *start = '\0';
-      asprintf(&result, 
+      asprintf(&result,
       "<object width=\"400\" height=\"225\"><param name=\"allowfullscreen\" value=\"true\" />"
       "<param name=\"allowscriptaccess\" value=\"always\" /><param name=\"movie\" "
       "value=\"%s&amp;server=vimeo.com&amp;show_title=1&amp;show_byline=1&amp;show_portrait=0&amp;color=&amp;fullscreen=1\" />"
       "<embed src=\"%s&amp;server=vimeo.com&amp;show_title=1&amp;show_byline=1&amp;show_portrait=0&amp;color=&amp;fullscreen=1\" "
       "type=\"application/x-shockwave-flash\" allowfullscreen=\"true\" allowscriptaccess=\"always\" width=\"400\" height=\"225\">"
       "</embed></object>",
-      url,url);       
+      url,url);
       *skip_chars = p - start;
       return result;
     }
     else if ( !strncasecmp(p, "veoh=", 5) )
     /* veoh video embedded */
     {
-      q=p;  
+      q=p;
       start=p+5;
       while ( *p != '\0' && !isspace(*p) && *p != '|' ) p++;
-      
+
       url = malloc(sizeof(char) * ((p - start) + 2) );
       memset(url, 0, sizeof(char) * ((p - start) + 2));
       strncpy(url, start, p - start);
       start=q;
       *start = '\0';
-      asprintf(&result, 
+      asprintf(&result,
       "<object width=\"410\" height=\"341\" id=\"veohFlashPlayer\" name=\"veohFlashPlayer\">"
       "<param name=\"movie\" value=\"%s&player=videodetailsembedded&videoAutoPlay=0&id=anonymous\">"
       "</param><param name=\"allowFullScreen\" value=\"true\">"
@@ -195,54 +217,54 @@ check_for_link(char *line, int *skip_chars)
       "type=\"application/x-shockwave-flash\" allowscriptaccess=\"always\" allowfullscreen=\"true\" "
       "width=\"410\" height=\"341\" id=\"veohFlashPlayerEmbed\" name=\"veohFlashPlayerEmbed\">"
       "</embed></object>",
-      url, url);          
+      url, url);
       *skip_chars = p - start;
       return result;
     }
     else if ( !strncasecmp(p, "flash=", 6) )
     /* generic flash video embedded */
     {
-      q=p;  
+      q=p;
       start=p+6;
       if ( pic_width > 100) w=pic_width;
         else w=320;
       if ( pic_height > 100) h=pic_height;
         else h=240;
-        
+
       while ( *p != '\0' && !isspace(*p) && *p != '|' ) p++;
-      
+
       url = malloc(sizeof(char) * ((p - start) + 2) );
       memset(url, 0, sizeof(char) * ((p - start) + 2));
       strncpy(url, start, p - start);
       start=q;
       *start = '\0';
-      asprintf(&result, 
+      asprintf(&result,
       "<object type=\"application/x-shockwave-flash\" data=\"%s\" width=\"%i\" height=\"%i\">"
       "<param name=\"movie\" value=\"%s\"></object>",
-      url, w, h, url);  
+      url, w, h, url);
       *skip_chars = p - start;
       return result;
     }
     else if ( !strncasecmp(p, "swf=", 4) )
     /* swf flash animation embedded */
     {
-      q=p;  
+      q=p;
       start=p+4;
       if ( pic_width > 100) w=pic_width;
         else w=320;
       if ( pic_height > 100) h=pic_height;
         else h=240;
-        
+
       while ( *p != '\0' && !isspace(*p) && *p != '|' ) p++;
-      
+
       url = malloc(sizeof(char) * ((p - start) + 2) );
       memset(url, 0, sizeof(char) * ((p - start) + 2));
       strncpy(url, start, p - start);
       start=q;
       *start = '\0';
-      asprintf(&result, 
+      asprintf(&result,
       "<object type=\"application/x-shockwave-flash\" data=\"%s\" width=\"%i\" height=\"%i\">",
-        url, w, h); 
+        url, w, h);
       *skip_chars = p - start;
       return result;
     }
@@ -284,29 +306,29 @@ check_for_link(char *line, int *skip_chars)
       *skip_chars = p - start;
 
       /* url is an image ? */
-      if (!strncmp(url+len-4, ".gif", 4) || !strncmp(url+len-4, ".png", 4) 
+      if (!strncmp(url+len-4, ".gif", 4) || !strncmp(url+len-4, ".png", 4)
       || !strncmp(url+len-4, ".jpg", 4) || !strncmp(url+len-5, ".jpeg", 5))
-      {   
-          if (pic_width) 
+      {
+          if (pic_width)
             sprintf(width_pic_str," width=\"%i\"",pic_width);
           else
             width_pic_str[0]='\0';
-        
-          if (pic_height) 
+
+          if (pic_height)
             sprintf(height_pic_str," height=\"%i\"",pic_height);
           else
             height_pic_str[0]='\0';
-        
-          if (pic_border) 
-            sprintf(border_pic_str," border=\"%i\"",pic_border);    
+
+          if (pic_border)
+            sprintf(border_pic_str," border=\"%i\"",pic_border);
           else
             border_pic_str[0]='\0';
-        
+
           if (title) /*  case: [image link] */
             asprintf(&result, "<a href=\"%s\"><img src=\"%s\"%s%s%s></a>",
                  title, url, border_pic_str, width_pic_str, height_pic_str);
           else /*  case: http://link_to_image */
-            asprintf(&result, "<img src=\"%s\"%s%s%s>", 
+            asprintf(&result, "<img src=\"%s\"%s%s%s>",
                 url, border_pic_str, width_pic_str, height_pic_str);
       }
       else /*  url or title does'nt link to an image */
@@ -355,35 +377,35 @@ void
 wiki_parse_between_braces(char *s)
 {
     char *str_ptr;
-    
-    if ( (str_ptr=strstr(s,"width=")) != NULL ) 
+
+    if ( (str_ptr=strstr(s,"width=")) != NULL )
     {
       str_ptr+=6;
       pic_width=atoi(str_ptr);
     }
     /* else pic_width=0; */
-    
-    if ( (str_ptr=strstr(s,"height=")) != NULL ) 
+
+    if ( (str_ptr=strstr(s,"height=")) != NULL )
     {
       str_ptr+=7;
       pic_height=atoi(str_ptr);
     }
     /* else pic_height=0; */
-    
-    if ( (str_ptr=strstr(s,"border=")) != NULL ) 
+
+    if ( (str_ptr=strstr(s,"border=")) != NULL )
     {
       str_ptr+=7;
       pic_border=atoi(str_ptr);
     }
     /* else pic_border=0; */
-    
+
     if ( strstr(s,"picture=default") != NULL )
     {
       pic_width=0;
       pic_height=0;
       pic_border=0;
     }
-    
+
     if ( strstr(s,"wwwlink=new_tag") != NULL )
       target_wwwlink=1;
     else if ( strstr(s,"wwwlink=current_tag") != NULL )
@@ -520,7 +542,7 @@ prepare_toc(char **sectionlist,char *raw_page_data)
           lg+= 1000;
           *sectionlist = realloc(*sectionlist, lg);
         }
-          
+
         (*sectionlist)[i++] = *p;
         p++;
       }
@@ -533,7 +555,8 @@ prepare_toc(char **sectionlist,char *raw_page_data)
   return;
 }
 
-static void print_toc(HttpResponse *res, char *sectionlist)
+static void
+print_toc(HttpResponse *res, char *sectionlist)
 {
   int sectioncnt = 0;
   char *eol;
@@ -563,15 +586,57 @@ static void print_toc(HttpResponse *res, char *sectionlist)
   http_response_printf(res, "</div>\n");
 }
 
+static void
+print_entry(wiki_ctx_t *ctx, char *str_ptr)
+{
+  /* close form already opened */
+  if (ctx->form_on)
+    http_response_printf(ctx->res, "</form>\n");
+
+  ctx->form_on = 1; /* so we know we will have to close <form> */
+  ctx->form_cnt++;  /* for datafield */
+  http_response_printf(ctx->res,
+      "<form method=POST action='%s?entry' name='entryform'>\n", ctx->page);
+
+  int size = 30;
+  char date[80] = "";
+
+  if (*(str_ptr)) {
+    if ((strstr(str_ptr, "tiny")))
+      size = 10;
+    else if ((strstr(str_ptr, "small")))
+      size = 20;
+    else if ((strstr(str_ptr, "medium")))
+      size = 40;
+    else if ((strstr(str_ptr, "large")))
+      size = 60;
+    else if ((strstr(str_ptr, "huge")))
+      size = 80;
+
+    if ((strstr(str_ptr, "date")))
+    {
+      time_t now;
+      struct tm * timeinfo;
+      (void) time(&now);
+      timeinfo = localtime(&now);
+      strftime(date, 80, "%a %b %d %H:%M ", timeinfo);
+    }
+  }
+
+  /* hidden datafield gives the {{data#}} to use */
+  http_response_printf(ctx->res,
+      "<p><input type='text' name='data' value='%s' size='%i' title='Entrer your text'>"
+      "</p>"
+      "<input type='hidden' name='datafield' value='%u' />"
+      "<p><input type=submit name='add' value='Add' title='[alt-a]' accesskey='a'>"
+      "</p>\n", date, size, ctx->form_cnt);
+}
+
 int
 wiki_print_data_as_html(
 HttpResponse *res, char *raw_page_data, int autorized, char *page)
 {
-  string_t htmlbuf = STRING_ZERO;
-  char *p = raw_page_data;      /* accumulates non marked up text */
   char *q = NULL, *link = NULL; /* temporary scratch stuff */
-  char *line = NULL;
-  int   line_len;
   int   i, j, k, skip_chars;
   char  color_str[64];
   char label[80];
@@ -579,25 +644,18 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
   char  *sectionlist;
   int section      = 0;
   /* flags, mainly for open tag states */
-  int color_on     = 0;
-  int bgcolor_on   = 0;
-  int code_on = 0;
-  int highlight_on = 0;
-  int bold_on      = 0;
-  int italic_on    = 0;
-  int underline_on = 0;
-  int strikethrough_on = 0;
   int open_para    = 0;
-  int pre_on       = 0;
-  int table_on     = 0;
-  int form_on      = 0;
-  int form_cnt     = 0;
-  int num          = 0;
-  int state        = 0;
-  
+
   char color_k,color_prev='\0';
-  char bgcolor_k,bgcolor_prev='\0';  
+  char bgcolor_k,bgcolor_prev='\0';
   int private; /* flag 1 if access denied */
+
+  wiki_ctx_t ctx;
+
+  memset(&ctx, 0, sizeof(ctx));
+  ctx.res = res;
+  ctx.page = page;
+  ctx.page_data = raw_page_data;
 
 #define ULIST 0
 #define OLIST 1
@@ -611,27 +669,29 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
 
   prepare_toc(&sectionlist, raw_page_data);
 
-  q = p;  /* p accumulates non marked up text, q is just a pointer
-       * to the end of the current line - used by below func. 
+  q = ctx.page_data;  /* ctx.page_data accumulates non marked up text, q is just a pointer
+       * to the end of the current line - used by below func.
        */
-      
+
   private=0;
-  while ( (line = get_line_from_string(&q, &line_len)) && !private)
+  while ( (ctx.line.s = get_line_from_string(&q, &ctx.line.len)) && !private)
   {
-    int   header_level = 0; 
+    int   header_level = 0;
     int   blockquote_flag = 0;
-    char *line_start   = line;
     int   skip_to_content = 0;
     char  attrbuf[1024];
+
+    ctx.line.pos = ctx.line.s;
+
     /*
-     *  process any initial wiki chars at line beginning 
+     *  process any initial wiki chars at line beginning
      */
 
-    if (pre_on && !isspace(*line) && *line != '\0')
+    if (ctx.pre_on && !isspace(*ctx.line.pos) && *ctx.line.pos != '\0')
     {
       /* close any preformatting if already on*/
       http_response_printf(res, "</pre>\n") ;
-      pre_on = 0;
+      ctx.pre_on = 0;
     }
 
     /* Handle ordered & unordered list, code is a bit mental.. */
@@ -639,9 +699,9 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
     {
 
       /* extra checks avoid bolding */
-      if ( *line == listtypes[i].ident
-           && ( *(line+1) == listtypes[i].ident || isspace(*(line+1)) ) ) 
-      {                       
+      if ( *ctx.line.pos == listtypes[i].ident
+           && ( *(ctx.line.pos+1) == listtypes[i].ident || isspace(*(ctx.line.pos+1)) ) )
+      {
         int item_depth = 0;
 
         if (listtypes[!i].depth)
@@ -651,8 +711,8 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
           listtypes[!i].depth = 0;
         }
 
-        while ( *line == listtypes[i].ident ) { line++; item_depth++; }
-    
+        while ( *ctx.line.pos == listtypes[i].ident ) { ctx.line.pos++; item_depth++; }
+
         if (item_depth < listtypes[i].depth)
         {
           for (j = 0; j < (listtypes[i].depth - item_depth); j++)
@@ -663,17 +723,17 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
           for (j = 0; j < (item_depth - listtypes[i].depth); j++)
             http_response_printf(res, "<%s>\n", listtypes[i].tag);
         }
-        
+
         http_response_printf(res, "<li>");
         listtypes[i].depth = item_depth;
         skip_to_content = 1;
       }
-      else if (listtypes[i].depth && !listtypes[!i].depth) 
+      else if (listtypes[i].depth && !listtypes[!i].depth)
       {
        /* close current list */
         for (j=0; j<listtypes[i].depth; j++)
           http_response_printf(res, "</%s>\n", listtypes[i].tag);
-          
+
         listtypes[i].depth = 0;
       }
     }
@@ -683,43 +743,43 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
 
     /* Tables */
 
-    if (*line == '|')
+    if (*ctx.line.pos == '|')
     {
       int n;
-      if (table_on==0)
+      if (ctx.table_on==0)
         http_response_printf(res, "<table class='wikitable'>\n");
 
       http_response_printf(res, "<tr><td");
-      if (0 != (n = parse_table_attributes(line + 1, attrbuf, sizeof(attrbuf)))) {
+      if (0 != (n = parse_table_attributes(ctx.line.pos + 1, attrbuf, sizeof(attrbuf)))) {
 	http_response_printf(res, " %s>", attrbuf);
-	line += n;
+	ctx.line.pos += n;
       } else {
 	http_response_printf(res, ">");
       }
-      line++;
-      table_on = 1;
+      ctx.line.pos++;
+      ctx.table_on = 1;
       goto line_content;
     }
     else
     {
-      if(table_on)
+      if(ctx.table_on)
       {
         http_response_printf(res, "</table>\n");
-        table_on = 0;
+        ctx.table_on = 0;
       }
     }
 
     /* pre formated  */
 
-    if ( (isspace(*line) || *line == '\0'))
+    if ( (isspace(*ctx.line.pos) || *ctx.line.pos == '\0'))
     {
       int n_spaces = 0;
 
-      while ( isspace(*line) ) { line++; n_spaces++; }
+      while ( isspace(*ctx.line.pos) ) { ctx.line.pos++; n_spaces++; }
 
-      if (*line == '\0')  /* empty line - para */
+      if (*ctx.line.pos == '\0')  /* empty line - para */
       {
-        if (pre_on)
+        if (ctx.pre_on)
         {
           continue;
         }
@@ -735,114 +795,114 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
       }
       else /* starts with space so Pre formatted, see above for close */
       {
-        if (!pre_on)
+        if (!ctx.pre_on)
         http_response_printf(res, "<pre>\n") ;
-        pre_on = 1;
-        line = line - ( n_spaces - 1 ); /* rewind so extra spaces
+        ctx.pre_on = 1;
+        ctx.line.pos = ctx.line.pos - ( n_spaces - 1 ); /* rewind so extra spaces
                                                  they matter to pre */
-        http_response_printf(res, "%s\n", util_htmlize(line, &htmlbuf));
+        http_response_printf(res, "%s\n", util_htmlize(ctx.line.pos, &ctx.htmlbuf));
         continue;
       }
     }
-    else if ( *line == '=' ) /* header */
+    else if ( *ctx.line.pos == '=' ) /* header */
     {
       section++;
-      while (*line == '=')
-        { header_level++; line++; }
+      while (*ctx.line.pos == '=')
+        { header_level++; ctx.line.pos++; }
       http_response_printf(res, "<h%d id='section%i'>", header_level, section);
-      p = line;
+      ctx.page_data = ctx.line.pos;
     }
-    else if ( *line == '-' && *(line+1) == '-' ) /* rule */
+    else if ( *ctx.line.pos == '-' && *(ctx.line.pos+1) == '-' ) /* rule */
     {
       http_response_printf(res, "<hr/>\n");
-      while ( *line == '-' ) line++;
+      while ( *ctx.line.pos == '-' ) ctx.line.pos++;
     }
-    else if ( *line == '\'' ) /* quote */
+    else if ( *ctx.line.pos == '\'' ) /* quote */
     {
       blockquote_flag=1;
-      line++;
+      ctx.line.pos++;
       http_response_printf(res, "<blockquote>\n");
     }
 
     line_content:
 
-    /* 
-     * now process rest of the line 
+    /*
+     * now process rest of the line
      */
 
-    p = line;
+    ctx.page_data = ctx.line.pos;
 
-    while ( *line != '\0' )
+    while ( *ctx.line.pos != '\0' )
     {
       /* ignore link */
-      if ( *line == '!' && !isspace(*(line+1))) 
+      if ( *ctx.line.pos == '!' && !isspace(*(ctx.line.pos+1)))
       {                   /* escape next word - skip it */
-        *line = '\0';
-        http_response_printf(res, "%s", util_htmlize(p, &htmlbuf));
-        p = ++line;
+        *ctx.line.pos = '\0';
+        http_response_printf(res, "%s", util_htmlize(ctx.page_data, &ctx.htmlbuf));
+        ctx.page_data = ++ctx.line.pos;
 
-        while (*line != '\0' && !isspace(*line)) line++;
-        if (*line == '\0')
+        while (*ctx.line.pos != '\0' && !isspace(*ctx.line.pos)) ctx.line.pos++;
+        if (*ctx.line.pos == '\0')
           continue;
       }
       /* search for link inside the line */
-      else if ((link = check_for_link(line, &skip_chars)) != NULL)
+      else if ((link = check_for_link(ctx.line.pos, &skip_chars)) != NULL)
       {
-        http_response_printf(res, "%s", util_htmlize(p, &htmlbuf));
+        http_response_printf(res, "%s", util_htmlize(ctx.page_data, &ctx.htmlbuf));
         http_response_printf(res, "%s", link);
 
-        line += skip_chars;
-        p = line;
+        ctx.line.pos += skip_chars;
+        ctx.page_data = ctx.line.pos;
 
         continue;
       }
       /* TODO: Below is getting bloated and messy, need rewriting more
        *       compactly ( and efficently ).
        */
-      else if  (*line == '{' && *(line+1) == '{')
+      else if  (*ctx.line.pos == '{' && *(ctx.line.pos+1) == '{')
       /* Proceed double braces */
       {
-        if (line_start != line 
-          && !is_wiki_format_char_or_space(*(line-1)))
-        { line=line+2; continue; }
-        /* search closing braces */ 
+        if (ctx.line.s != ctx.line.pos
+          && !is_wiki_format_char_or_space(*(ctx.line.pos-1)))
+        { ctx.line.pos=ctx.line.pos+2; continue; }
+        /* search closing braces */
         k=2;
-        while (*(line+k) != '}')
+        while (*(ctx.line.pos+k) != '}')
         {
-          if ( *(line+k) == '\0' )
-            { line=line+2; continue; }
+          if ( *(ctx.line.pos+k) == '\0' )
+            { ctx.line.pos=ctx.line.pos+2; continue; }
           k++;
         }
         k++;
-        if (*(line+k) == '}')
-          *(line+k)='\0'; /* terminate the line */
+        if (*(ctx.line.pos+k) == '}')
+          *(ctx.line.pos+k)='\0'; /* terminate the line */
         else
-          { line=line+2; continue; }
+          { ctx.line.pos=ctx.line.pos+2; continue; }
 
         /* Parse tags between double braces */
         /*  need to be rewritten */
-        
+
         /* search image/video size */
-        wiki_parse_between_braces(line+2);
+        wiki_parse_between_braces(ctx.line.pos+2);
         /* control access */
-        if ( (strstr(line+2,"private")) ) 
+        if ( (strstr(ctx.line.pos+2,"private")) )
         {
           if ( !autorized )
           {
             http_response_printf(res, "<p>--- Sorry, the access below is denied ----</p>\n");
-            *p = '\0';
+            *ctx.page_data = '\0';
             private=1; /* will stop getting line */
             break; /* terminate the while loop */
           }
         }
         /* Expand */
-        if ( (str_ptr=strstr(line+2,"expand")) ) 
-        {   
+        if ( (str_ptr=strstr(ctx.line.pos+2,"expand")) )
+        {
           if ( *(str_ptr-1) == '-' ) /* terminate expand */
           {
             http_response_printf(res,"</div></div>\n");
           }
-          else          
+          else
           {
             /* search label */
             if ( *(str_ptr+6) == '=' )
@@ -859,9 +919,9 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
             }
             else
               strcpy(label,"Click here!");
-            
-            expand_collapse_num++; 
-            http_response_printf(res, 
+
+            expand_collapse_num++;
+            http_response_printf(res,
               "<div id=\"wrapper\">"
               "<p>"
               "<a onclick=\"expandcollapse('myvar%i');\" "
@@ -872,13 +932,13 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
           }
         }
         /* Collapse */
-        else if ( (str_ptr=strstr(line+2,"collapse")) ) 
-        {   
+        else if ( (str_ptr=strstr(ctx.line.pos+2,"collapse")) )
+        {
           if ( *(str_ptr-1) == '-' ) /* terminate expand */
           {
             http_response_printf(res,"</div></div>\n");
           }
-          else          
+          else
           {
             /* search label */
             if ( *(str_ptr+8) == '=' )
@@ -895,9 +955,9 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
             }
             else
               strcpy(label,"Click here!");
-            
-            expand_collapse_num++; 
-            http_response_printf(res, 
+
+            expand_collapse_num++;
+            http_response_printf(res,
               "<div id=\"wrapper\">"
               "<p>"
               "<a onclick=\"expandcollapse('myvar%i');\" "
@@ -908,9 +968,9 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
           }
         }
         /* Upload a file */
-        if ( (strstr(line+2,"upload")) ) 
-        {   
-          http_response_printf(res, 
+        if ( (strstr(ctx.line.pos+2,"upload")) )
+        {
+          http_response_printf(res,
             "<p><FORM ACTION='Upload' METHOD='post' ENCTYPE='multipart/form-data'>"
             "<input type=file><br>"
             "Note about this file: <input type=text name=note><br>"
@@ -919,60 +979,19 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
         }
 
         /* table of contents */
-        if (strstr(line+2, "toc"))
+        if (strstr(ctx.line.pos+2, "toc"))
         {
 	  print_toc(res, sectionlist);
         }
-
 	/* entry  */
-        if ( (str_ptr=strstr(line+2,"entry")) ) 
-        { 
-          /* close form already opened */
-          if (form_on)
-            http_response_printf(res, "</form>\n");
-          
-          form_on=1; /* so we know we will have to close <form> */
-          form_cnt++; /* for datafield */
-          http_response_printf(res, 
-            "<form method=POST action='%s?entry' name='entryform'>\n",page);
-          
-          int size=30;
-          char date[80]=""; 
-          
-          if ( *(str_ptr+5) )
-          {
-            if ( (strstr(str_ptr+5,"tiny")) )
-              size=10;
-            else if ( (strstr(str_ptr+5,"small")) )
-              size=20;
-            else if ( (strstr(str_ptr+5,"medium")) )
-              size=40;
-            else if ( (strstr(str_ptr+5,"large")) )
-              size=60;
-            else if ( (strstr(str_ptr+5,"huge")) )
-              size=80;
-            
-            if ( (str_ptr=strstr(str_ptr+5,"date")) )
-            {
-              time_t now;
-              struct tm * timeinfo;
-              (void) time(&now);
-              timeinfo = localtime(&now);
-              strftime(date, 80, "%a %b %d %H:%M ", timeinfo);
-            }
-          }
-          /* hidden datafield gives the {{data#}} to use */
-          http_response_printf(res, 
-            "<p><input type='text' name='data' value='%s' size='%i' title='Entrer your text'>"
-            "</p>"
-            "<input type='hidden' name='datafield' value='%i' />"
-            "<p><input type=submit name='add' value='Add' title='[alt-a]' accesskey='a'>"
-            "</p>\n",date,size,form_cnt);
+        if ( (str_ptr=strstr(ctx.line.pos+2,"entry")) )
+        {
+	  print_entry(&ctx, str_ptr + 5);
         }
         /* Simple checkbox */
-        if ( (str_ptr=strstr(line+2,"checkbox")) ) 
+        if ( (str_ptr=strstr(ctx.line.pos+2,"checkbox")) )
         {
-          num=state=0;   
+	  int num = 0, state = 0;
           if (*(str_ptr+8) == '=')
             num=atol(str_ptr+9);
           if ( (str_ptr=strchr(str_ptr+9,';')) )
@@ -988,38 +1007,37 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
             num,num,state ? "checked='checked'":"");
         }
         /* Save checkboxes state */
-        if ( (strstr(line+2,"save")) ) 
+        if ( (strstr(ctx.line.pos+2,"save")) )
         {
           http_response_printf(res,
             "<input type=submit name='save' value='Save' title='[alt-s]' accesskey='s'>\n");
         }
         /* Delete field */
-        if ( (strstr(line+2,"delete")) ) 
+        if ( (strstr(ctx.line.pos+2,"delete")) )
         {
           http_response_printf(res,
             "<input type=submit name='delete' value='Delete' title='[alt-d]' accesskey='d'>\n");
         }
-        
-        line+= k; /* point to '\0' (the last closing brace) */
-        p= line+1; /* point just after '\0' */
+        ctx.line.pos += k; /* point to '\0' (the last closing brace) */
+        ctx.page_data = ctx.line.pos + 1; /* point just after '\0' */
       } /* end of the double braces */
-      
+
       /* single braces */
-      else if (*line == '{' && strchr("RGBYPCD",*(line+1)) && *(line+2) == '}')
+      else if (*ctx.line.pos == '{' && strchr("RGBYPCD",*(ctx.line.pos+1)) && *(ctx.line.pos+2) == '}')
       {
         /* Text color */
-        if (line_start != line 
-          && !is_wiki_format_char_or_space(*(line-1)) 
-          && !color_on)
-        { line++; continue; }
+        if (ctx.line.s != ctx.line.pos
+          && !is_wiki_format_char_or_space(*(ctx.line.pos-1))
+          && !ctx.color_on)
+        { ctx.line.pos++; continue; }
 
-        if ((isspace(*(line+3)) && !color_on))
-        { line++; continue; }
+        if ((isspace(*(ctx.line.pos+3)) && !ctx.color_on))
+        { ctx.line.pos++; continue; }
 
         /* color */
-        *line = '\0';
-        color_k = *(line+1);
-        switch( color_k ) 
+        *ctx.line.pos = '\0';
+        color_k = *(ctx.line.pos+1);
+        switch( color_k )
         {
           case 'R':
             strcpy(color_str,"<FONT COLOR=\"#FF0000\">");
@@ -1041,34 +1059,34 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
             break;
           case 'D':
             strcpy(color_str,"<FONT COLOR=\"#000000\">");
-            break;  
+            break;
         }
-        
-        if (color_prev && color_k != color_prev) { 
-          color_on = 0; /* reset flag */  
+
+        if (color_prev && color_k != color_prev) {
+          ctx.color_on = 0; /* reset flag */
           http_response_printf(res, "%s","</FONT>\n");
         }
           color_prev = color_k;
 
-        http_response_printf(res, "%s%s\n", p, color_on ? "</FONT>" : color_str);
-        color_on ^= 1; /* switch flag */
-        p = line+3;
+        http_response_printf(res, "%s%s\n", ctx.page_data, ctx.color_on ? "</FONT>" : color_str);
+        ctx.color_on ^= 1; /* switch flag */
+        ctx.page_data = ctx.line.pos+3;
       }
-       else if (*line == '(' && strchr("RGBYPCD",*(line+1)) && *(line+2) ==')' )
+       else if (*ctx.line.pos == '(' && strchr("RGBYPCD",*(ctx.line.pos+1)) && *(ctx.line.pos+2) ==')' )
       {
         /* bgcolor */
-        if (line_start != line 
-          && !is_wiki_format_char_or_space(*(line-1)) 
-          && !bgcolor_on)
-        { line++; continue; }
+        if (ctx.line.s != ctx.line.pos
+          && !is_wiki_format_char_or_space(*(ctx.line.pos-1))
+          && !ctx.bgcolor_on)
+        { ctx.line.pos++; continue; }
 
-        if ((isspace(*(line+3)) && !bgcolor_on))
-        { line++; continue; }
+        if ((isspace(*(ctx.line.pos+3)) && !ctx.bgcolor_on))
+        { ctx.line.pos++; continue; }
 
         /* color */
-        *line = '\0';
-        bgcolor_k = *(line+1);
-        switch( bgcolor_k ) 
+        *ctx.line.pos = '\0';
+        bgcolor_k = *(ctx.line.pos+1);
+        switch( bgcolor_k )
         {
           case 'R':
             strcpy(color_str,"<SPAN STYLE=\"background: #FF0000\">");
@@ -1089,158 +1107,158 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
             strcpy(color_str,"<SPAN STYLE=\"background: #00FFFF\">");
             break;
         }
-        
+
         if (bgcolor_prev && bgcolor_k != bgcolor_prev) {
-          bgcolor_on = 0; /* reset flag */    
+          ctx.bgcolor_on = 0; /* reset flag */
           http_response_printf(res, "%s","</SPAN>\n");
         }
         bgcolor_prev = bgcolor_k;
 
-        http_response_printf(res, "%s%s\n", util_htmlize(p, &htmlbuf), bgcolor_on ? "</SPAN>" : color_str);
-        bgcolor_on ^= 1; /* switch flag */
-        p = line+3;
+        http_response_printf(res, "%s%s\n", util_htmlize(ctx.page_data, &ctx.htmlbuf), ctx.bgcolor_on ? "</SPAN>" : color_str);
+        ctx.bgcolor_on ^= 1; /* switch flag */
+        ctx.page_data = ctx.line.pos+3;
 
       }
-      else if (*line == '`')
+      else if (*ctx.line.pos == '`')
       {
         /* code */
-        if (line_start != line 
-          && !is_wiki_format_char_or_space(*(line-1)) 
-          && !code_on)
-        { line++; continue; }
+        if (ctx.line.s != ctx.line.pos
+          && !is_wiki_format_char_or_space(*(ctx.line.pos-1))
+          && !ctx.code_on)
+        { ctx.line.pos++; continue; }
 
-        if ((isspace(*(line+1)) && !code_on))
-        { line++; continue; }
+        if ((isspace(*(ctx.line.pos+1)) && !ctx.code_on))
+        { ctx.line.pos++; continue; }
 
-        *line = '\0';
-        http_response_printf(res, "%s%s\n", util_htmlize(p, &htmlbuf), code_on ? "</CODE>" : "<CODE>");
-        code_on ^= 1; /* switch flag */
-        p = line+1;
+        *ctx.line.pos = '\0';
+        http_response_printf(res, "%s%s\n", util_htmlize(ctx.page_data, &ctx.htmlbuf), ctx.code_on ? "</CODE>" : "<CODE>");
+        ctx.code_on ^= 1; /* switch flag */
+        ctx.page_data = ctx.line.pos+1;
       }
-      else if (*line == '+')
+      else if (*ctx.line.pos == '+')
       {
         /* highlight */
-        if (line_start != line 
-          && !is_wiki_format_char_or_space(*(line-1)) 
-          && !highlight_on)
-        { line++; continue; }
+        if (ctx.line.s != ctx.line.pos
+          && !is_wiki_format_char_or_space(*(ctx.line.pos-1))
+          && !ctx.highlight_on)
+        { ctx.line.pos++; continue; }
 
-        if ((isspace(*(line+1)) && !highlight_on))
-        { line++; continue; }
+        if ((isspace(*(ctx.line.pos+1)) && !ctx.highlight_on))
+        { ctx.line.pos++; continue; }
 
-        *line = '\0';
-        http_response_printf(res, "%s%s\n", util_htmlize(p, &htmlbuf), highlight_on ? "</SPAN>" : "<SPAN STYLE=\"background: #FFFF00\">");
-        highlight_on ^= 1; /* switch flag */
-        p = line+1;
+        *ctx.line.pos = '\0';
+        http_response_printf(res, "%s%s\n", util_htmlize(ctx.page_data, &ctx.htmlbuf), ctx.highlight_on ? "</SPAN>" : "<SPAN STYLE=\"background: #FFFF00\">");
+        ctx.highlight_on ^= 1; /* switch flag */
+        ctx.page_data = ctx.line.pos+1;
       }
-      else if (*line == '*')
+      else if (*ctx.line.pos == '*')
       {
         /* Try and be smart about what gets bolded */
-        if (line_start != line 
-          && !is_wiki_format_char_or_space(*(line-1)) 
-          && !bold_on)
-        { line++; continue; }
+        if (ctx.line.s != ctx.line.pos
+          && !is_wiki_format_char_or_space(*(ctx.line.pos-1))
+          && !ctx.bold_on)
+        { ctx.line.pos++; continue; }
 
-        if ((isspace(*(line+1)) && !bold_on))
-        { line++; continue; }
+        if ((isspace(*(ctx.line.pos+1)) && !ctx.bold_on))
+        { ctx.line.pos++; continue; }
 
         /* bold */
-        *line = '\0';
-        http_response_printf(res, "%s%s\n", util_htmlize(p, &htmlbuf), bold_on ? "</b>" : "<b>");
-        bold_on ^= 1; /* reset flag */
-        p = line+1;
+        *ctx.line.pos = '\0';
+        http_response_printf(res, "%s%s\n", util_htmlize(ctx.page_data, &ctx.htmlbuf), ctx.bold_on ? "</b>" : "<b>");
+        ctx.bold_on ^= 1; /* reset flag */
+        ctx.page_data = ctx.line.pos+1;
 
       }
-      else if (*line == '_' )
+      else if (*ctx.line.pos == '_' )
       {
-        if (line_start != line 
-          && !is_wiki_format_char_or_space(*(line-1)) 
-          && !underline_on)
-        { line++; continue; }
+        if (ctx.line.s != ctx.line.pos
+          && !is_wiki_format_char_or_space(*(ctx.line.pos-1))
+          && !ctx.underline_on)
+        { ctx.line.pos++; continue; }
 
-        if (isspace(*(line+1)) && !underline_on)
-        { line++; continue; }
+        if (isspace(*(ctx.line.pos+1)) && !ctx.underline_on)
+        { ctx.line.pos++; continue; }
         /* underline */
-        *line = '\0';
-        http_response_printf(res, "%s%s\n", util_htmlize(p, &htmlbuf), underline_on ? "</u>" : "<u>");
-        underline_on ^= 1; /* reset flag */
-        p = line+1;
+        *ctx.line.pos = '\0';
+        http_response_printf(res, "%s%s\n", util_htmlize(ctx.page_data, &ctx.htmlbuf), ctx.underline_on ? "</u>" : "<u>");
+        ctx.underline_on ^= 1; /* reset flag */
+        ctx.page_data = ctx.line.pos+1;
       }
-      else if (*line == '-')
+      else if (*ctx.line.pos == '-')
       {
-        if (line_start != line 
-          && !is_wiki_format_char_or_space(*(line-1)) 
-          && !strikethrough_on)
-        { line++; continue; }
+        if (ctx.line.s != ctx.line.pos
+          && !is_wiki_format_char_or_space(*(ctx.line.pos-1))
+          && !ctx.strikethrough_on)
+        { ctx.line.pos++; continue; }
 
-        if (isspace(*(line+1)) && !strikethrough_on)
-        { line++; continue; }
-           
+        if (isspace(*(ctx.line.pos+1)) && !ctx.strikethrough_on)
+        { ctx.line.pos++; continue; }
+
           /* strikethrough */
-          *line = '\0';
-          http_response_printf(res, "%s%s\n", util_htmlize(p, &htmlbuf), strikethrough_on ? "</del>" : "<del>");
-          strikethrough_on ^= 1; /* reset flag */
-          p = line+1; 
+          *ctx.line.pos = '\0';
+          http_response_printf(res, "%s%s\n", util_htmlize(ctx.page_data, &ctx.htmlbuf), ctx.strikethrough_on ? "</del>" : "<del>");
+          ctx.strikethrough_on ^= 1; /* reset flag */
+          ctx.page_data = ctx.line.pos+1;
         }
-      else if (*line == '/' )
+      else if (*ctx.line.pos == '/' )
         {
-          if (line_start != line 
-          && !is_wiki_format_char_or_space(*(line-1)) 
-          && !italic_on)
-        { line++; continue; }
+          if (ctx.line.s != ctx.line.pos
+          && !is_wiki_format_char_or_space(*(ctx.line.pos-1))
+          && !ctx.italic_on)
+        { ctx.line.pos++; continue; }
 
-          if (isspace(*(line+1)) && !italic_on)
-        { line++; continue; }
+          if (isspace(*(ctx.line.pos+1)) && !ctx.italic_on)
+        { ctx.line.pos++; continue; }
 
           /* crude path detection */
-          if (line_start != line && isspace(*(line-1)) && !italic_on)
-        { 
-          char *tmp   = line+1;
+          if (ctx.line.s != ctx.line.pos && isspace(*(ctx.line.pos-1)) && !ctx.italic_on)
+        {
+          char *tmp   = ctx.line.pos+1;
           int slashes = 0;
 
           /* Hack to escape out file paths */
           while (*tmp != '\0' && !isspace(*tmp))
-            { 
+            {
               if (*tmp == '/') slashes++;
               tmp++;
             }
 
-          if (slashes > 1 || (slashes == 1 && *(tmp-1) != '/')) 
-            { line = tmp; continue; }
+          if (slashes > 1 || (slashes == 1 && *(tmp-1) != '/'))
+            { ctx.line.pos = tmp; continue; }
         }
 
-          if (*(line+1) == '/')
-        line++;     /* escape out common '//' - eg urls */
+          if (*(ctx.line.pos+1) == '/')
+        ctx.line.pos++;     /* escape out common '//' - eg urls */
           else
         {
           /* italic */
-          *line = '\0';
-	  http_response_printf(res, "%s%s\n", util_htmlize(p, &htmlbuf), italic_on ? "</i>" : "<i>");
-	  italic_on ^= 1; /* reset flag */
-	  p = line+1; 
+          *ctx.line.pos = '\0';
+	  http_response_printf(res, "%s%s\n", util_htmlize(ctx.page_data, &ctx.htmlbuf), ctx.italic_on ? "</i>" : "<i>");
+	  ctx.italic_on ^= 1; /* reset flag */
+	  ctx.page_data = ctx.line.pos+1;
         }
       }
-      else if (*line == '|' && table_on) /* table column */
+      else if (*ctx.line.pos == '|' && ctx.table_on) /* table column */
       {
 	int n;
-        *line = '\0';
-	http_response_printf(res, "%s", util_htmlize(p, &htmlbuf));
+        *ctx.line.pos = '\0';
+	http_response_printf(res, "%s", util_htmlize(ctx.page_data, &ctx.htmlbuf));
 	http_response_printf(res, "</td><td");
-	if (0 != (n = parse_table_attributes(line + 1, attrbuf, sizeof(attrbuf)))) {
+	if (0 != (n = parse_table_attributes(ctx.line.pos + 1, attrbuf, sizeof(attrbuf)))) {
 	  http_response_printf(res, " %s>", attrbuf);
-	  line += n;
+	  ctx.line.pos += n;
 	} else {
 	  http_response_printf(res, ">\n");
 	}
-	p = line+1;
+	ctx.page_data = ctx.line.pos+1;
       }
 
-      line++;
+      ctx.line.pos++;
 
     } /* while loop, next word */
 
-    if (*p != '\0')           /* accumulated text left over */
-      http_response_printf(res, "%s", util_htmlize(p, &htmlbuf));
+    if (*ctx.page_data != '\0')           /* accumulated text left over */
+      http_response_printf(res, "%s", util_htmlize(ctx.page_data, &ctx.htmlbuf));
 
       /* close any html tags that could be still open */
 
@@ -1250,40 +1268,40 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
     if (listtypes[OLIST].depth)
       http_response_printf(res, "</li>");
 
-    if (table_on)
+    if (ctx.table_on)
       http_response_printf(res, "</td></tr>\n");
 
     if (header_level)
-      http_response_printf(res, "</h%d>\n", header_level);  
+      http_response_printf(res, "</h%d>\n", header_level);
     else if (blockquote_flag)
-      http_response_printf(res, "</blockquote>\n");  
+      http_response_printf(res, "</blockquote>\n");
     else
       http_response_printf(res, "\n");
     } /* next line */
 
   /*** clean up anything thats still open ***/
 
-  if (pre_on)
+  if (ctx.pre_on)
     http_response_printf(res, "</pre>\n");
-  
+
   /* close any open lists */
   for (i=0; i<listtypes[ULIST].depth; i++)
     http_response_printf(res, "</ul>\n");
 
   for (i=0; i<listtypes[OLIST].depth; i++)
     http_response_printf(res, "</ol>\n");
-  
+
   /* close any open paras */
   if (open_para)
     http_response_printf(res, "</p>\n");
 
   /* close table */
-  if (table_on)
+  if (ctx.table_on)
     http_response_printf(res, "</table>\n");
   /* close form */
-  if (form_on)
+  if (ctx.form_on)
     http_response_printf(res, "</form>\n");
-    
-  free(htmlbuf.s);
+
+  free(ctx.htmlbuf.s);
   return private;
 }

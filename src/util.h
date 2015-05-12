@@ -5,6 +5,7 @@ typedef struct {
   int len;
   int total;
   char *s;
+  char *pos;
 } string_t;
 
 #define STRING_ZERO { 0, 0, (char *)0 }
