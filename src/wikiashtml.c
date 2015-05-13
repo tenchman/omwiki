@@ -56,6 +56,17 @@ typedef struct {
   };
 } wiki_ctx_t;
 
+typedef struct {
+  const char *start;
+  const char *end;
+} element_t;
+
+static element_t element_bold = { "<b>", "</b>" };
+static element_t element_strikethrough = { "<del>", "</del>" };
+static element_t element_underline = { "<u>", "</u>" };
+static element_t element_highlight = { "<span style=\"background: #ffff00\">", "</span>" };
+static element_t element_code = { "<code>", "</code>" };
+
 static char *
 get_line_from_string(char **lines, int *line_len)
 {
@@ -413,6 +424,23 @@ wiki_parse_between_braces(char *s)
 
 }
 
+static void
+print_element(wiki_ctx_t *ctx, element_t *el, unsigned *flag)
+{
+  if (ctx->line.s != ctx->line.pos
+      && !is_wiki_format_char_or_space(*(ctx->line.pos - 1))
+      && !*flag) {
+    ctx->line.pos++;
+  } else if (isspace(*(ctx->line.pos + 1)) && !*flag) {
+    ctx->line.pos++;
+  } else {
+    *ctx->line.pos = '\0';
+    http_response_printf(ctx->res, "%s%s\n", util_htmlize(ctx->page_data, &ctx->htmlbuf),
+	*flag ? el->end : el->start);
+    *flag ^= 1;				  /* toggle flag */
+    ctx->page_data = ctx->line.pos + 1;	  /* advance page_data to next line */
+  }
+}
 /**
  * If you use several conflicting options like <(:)>, the last option wins.
  *
@@ -1121,115 +1149,60 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
       }
       else if (*ctx.line.pos == '`')
       {
-        /* code */
-        if (ctx.line.s != ctx.line.pos
-          && !is_wiki_format_char_or_space(*(ctx.line.pos-1))
-          && !ctx.code_on)
-        { ctx.line.pos++; continue; }
-
-        if ((isspace(*(ctx.line.pos+1)) && !ctx.code_on))
-        { ctx.line.pos++; continue; }
-
-        *ctx.line.pos = '\0';
-        http_response_printf(res, "%s%s\n", util_htmlize(ctx.page_data, &ctx.htmlbuf), ctx.code_on ? "</CODE>" : "<CODE>");
-        ctx.code_on ^= 1; /* switch flag */
-        ctx.page_data = ctx.line.pos+1;
+        print_element(&ctx, &element_code, &ctx.code_on);
       }
       else if (*ctx.line.pos == '+')
       {
-        /* highlight */
-        if (ctx.line.s != ctx.line.pos
-          && !is_wiki_format_char_or_space(*(ctx.line.pos-1))
-          && !ctx.highlight_on)
-        { ctx.line.pos++; continue; }
-
-        if ((isspace(*(ctx.line.pos+1)) && !ctx.highlight_on))
-        { ctx.line.pos++; continue; }
-
-        *ctx.line.pos = '\0';
-        http_response_printf(res, "%s%s\n", util_htmlize(ctx.page_data, &ctx.htmlbuf), ctx.highlight_on ? "</SPAN>" : "<SPAN STYLE=\"background: #FFFF00\">");
-        ctx.highlight_on ^= 1; /* switch flag */
-        ctx.page_data = ctx.line.pos+1;
+        print_element(&ctx, &element_highlight, &ctx.highlight_on);
       }
       else if (*ctx.line.pos == '*')
       {
-        /* Try and be smart about what gets bolded */
-        if (ctx.line.s != ctx.line.pos
-          && !is_wiki_format_char_or_space(*(ctx.line.pos-1))
-          && !ctx.bold_on)
-        { ctx.line.pos++; continue; }
-
-        if ((isspace(*(ctx.line.pos+1)) && !ctx.bold_on))
-        { ctx.line.pos++; continue; }
-
-        /* bold */
-        *ctx.line.pos = '\0';
-        http_response_printf(res, "%s%s\n", util_htmlize(ctx.page_data, &ctx.htmlbuf), ctx.bold_on ? "</b>" : "<b>");
-        ctx.bold_on ^= 1; /* reset flag */
-        ctx.page_data = ctx.line.pos+1;
-
+        print_element(&ctx, &element_bold, &ctx.bold_on);
       }
       else if (*ctx.line.pos == '_' )
       {
-        if (ctx.line.s != ctx.line.pos
-          && !is_wiki_format_char_or_space(*(ctx.line.pos-1))
-          && !ctx.underline_on)
-        { ctx.line.pos++; continue; }
-
-        if (isspace(*(ctx.line.pos+1)) && !ctx.underline_on)
-        { ctx.line.pos++; continue; }
-        /* underline */
-        *ctx.line.pos = '\0';
-        http_response_printf(res, "%s%s\n", util_htmlize(ctx.page_data, &ctx.htmlbuf), ctx.underline_on ? "</u>" : "<u>");
-        ctx.underline_on ^= 1; /* reset flag */
-        ctx.page_data = ctx.line.pos+1;
+        print_element(&ctx, &element_underline, &ctx.underline_on);
       }
       else if (*ctx.line.pos == '-')
       {
-        if (ctx.line.s != ctx.line.pos
-          && !is_wiki_format_char_or_space(*(ctx.line.pos-1))
-          && !ctx.strikethrough_on)
-        { ctx.line.pos++; continue; }
-
-        if (isspace(*(ctx.line.pos+1)) && !ctx.strikethrough_on)
-        { ctx.line.pos++; continue; }
-
-          /* strikethrough */
-          *ctx.line.pos = '\0';
-          http_response_printf(res, "%s%s\n", util_htmlize(ctx.page_data, &ctx.htmlbuf), ctx.strikethrough_on ? "</del>" : "<del>");
-          ctx.strikethrough_on ^= 1; /* reset flag */
-          ctx.page_data = ctx.line.pos+1;
-        }
+        print_element(&ctx, &element_strikethrough, &ctx.strikethrough_on);
+      }
       else if (*ctx.line.pos == '/' )
-        {
-          if (ctx.line.s != ctx.line.pos
-          && !is_wiki_format_char_or_space(*(ctx.line.pos-1))
+      {
+        if (ctx.line.s != ctx.line.pos
+	  && !is_wiki_format_char_or_space(*(ctx.line.pos-1))
           && !ctx.italic_on)
-        { ctx.line.pos++; continue; }
+	{ 
+	  ctx.line.pos++;
+	  continue;
+	}
 
-          if (isspace(*(ctx.line.pos+1)) && !ctx.italic_on)
-        { ctx.line.pos++; continue; }
+	if (isspace(*(ctx.line.pos+1)) && !ctx.italic_on) {
+	  ctx.line.pos++;
+	  continue;
+	}
 
-          /* crude path detection */
-          if (ctx.line.s != ctx.line.pos && isspace(*(ctx.line.pos-1)) && !ctx.italic_on)
-        {
-          char *tmp   = ctx.line.pos+1;
-          int slashes = 0;
+	/* crude path detection */
+	if (ctx.line.s != ctx.line.pos && isspace(*(ctx.line.pos-1)) && !ctx.italic_on) {
+	  char *tmp   = ctx.line.pos+1;
+	  int slashes = 0;
 
-          /* Hack to escape out file paths */
-          while (*tmp != '\0' && !isspace(*tmp))
-            {
-              if (*tmp == '/') slashes++;
-              tmp++;
-            }
+	  /* Hack to escape out file paths */
+	  while (*tmp != '\0' && !isspace(*tmp))
+	  {
+	    if (*tmp == '/') slashes++;
+	    tmp++;
+	  }
 
-          if (slashes > 1 || (slashes == 1 && *(tmp-1) != '/'))
-            { ctx.line.pos = tmp; continue; }
-        }
+	  if (slashes > 1 || (slashes == 1 && *(tmp-1) != '/')) {
+	    ctx.line.pos = tmp;
+	    continue;
+	  }
+	} 
 
-          if (*(ctx.line.pos+1) == '/')
-        ctx.line.pos++;     /* escape out common '//' - eg urls */
-          else
+        if (*(ctx.line.pos+1) == '/')
+	  ctx.line.pos++;     /* escape out common '//' - eg urls */
+        else
         {
           /* italic */
           *ctx.line.pos = '\0';
