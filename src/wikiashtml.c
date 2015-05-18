@@ -660,6 +660,26 @@ print_entry(wiki_ctx_t *ctx, char *str_ptr)
       "</p>\n", date, size, ctx->form_cnt);
 }
 
+static char *
+wiki_color_string(char c)
+{
+  switch (c) {
+    case 'R':
+      return "#FF0000";
+    case 'G':
+      return "#00FF00";
+    case 'B':
+      return "#0000FF";
+    case 'Y':
+      return "#FFFF00";
+    case 'P':
+      return "#FF00FF";
+    case 'C':
+      return "#00FFFF";
+  }
+  return "#000000";
+}
+
 int
 wiki_print_data_as_html(
 HttpResponse *res, char *raw_page_data, int autorized, char *page)
@@ -1065,31 +1085,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
         /* color */
         *ctx.line.pos = '\0';
         color_k = *(ctx.line.pos+1);
-        switch( color_k )
-        {
-          case 'R':
-            strcpy(color_str,"<FONT COLOR=\"#FF0000\">");
-            break;
-          case 'G':
-            strcpy(color_str,"<FONT COLOR=\"#00FF00\">");
-            break;
-          case 'B':
-            strcpy(color_str,"<FONT COLOR=\"#0000FF\">");
-            break;
-          case 'Y':
-            strcpy(color_str,"<FONT COLOR=\"#FFFF00\">");
-            break;
-          case 'P':
-            strcpy(color_str,"<FONT COLOR=\"#FF00FF\">");
-            break;
-          case 'C':
-            strcpy(color_str,"<FONT COLOR=\"#00FFFF\">");
-            break;
-          case 'D':
-            strcpy(color_str,"<FONT COLOR=\"#000000\">");
-            break;
-        }
-
+        snprintf(color_str, sizeof(color_str), "<FONT COLOR=\"%s\">", wiki_color_string(color_k));
         if (color_prev && color_k != color_prev) {
           ctx.color_on = 0; /* reset flag */
           http_response_printf(res, "%s","</FONT>\n");
@@ -1114,28 +1110,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
         /* color */
         *ctx.line.pos = '\0';
         bgcolor_k = *(ctx.line.pos+1);
-        switch( bgcolor_k )
-        {
-          case 'R':
-            strcpy(color_str,"<SPAN STYLE=\"background: #FF0000\">");
-            break;
-          case 'G':
-            strcpy(color_str,"<SPAN STYLE=\"background: #00FF00\">");
-            break;
-          case 'B':
-            strcpy(color_str,"<SPAN STYLE=\"background: #0000FF\">");
-            break;
-          case 'Y':
-            strcpy(color_str,"<SPAN STYLE=\"background: #FFFF00\">");
-            break;
-          case 'P':
-            strcpy(color_str,"<SPAN STYLE=\"background: #FF00FF\">");
-            break;
-          case 'C':
-            strcpy(color_str,"<SPAN STYLE=\"background: #00FFFF\">");
-            break;
-        }
-
+        snprintf(color_str, sizeof(color_str), "<SPAN STYLE=\"background: %s\">", wiki_color_string(bgcolor_k));
         if (bgcolor_prev && bgcolor_k != bgcolor_prev) {
           ctx.bgcolor_on = 0; /* reset flag */
           http_response_printf(res, "%s","</SPAN>\n");
