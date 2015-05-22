@@ -280,6 +280,7 @@ check_for_link(char *line, int *skip_chars)
       return result;
     }
     else if (!strncasecmp(p, "http://", 7)
+       || !strncasecmp(p, "https://", 8)
        || !strncasecmp(p, "mailto://", 9)
        || !strncasecmp(p, "file://", 7))
   /* external link */
