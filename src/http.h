@@ -54,11 +54,7 @@ void
 http_response_set_data(HttpResponse *res, void *data, int data_len);
 
 void
-http_response_send_smallfile
-  (HttpResponse *res, char *filename, char *content, unsigned long sizelimit);
-  
-void
-http_response_send_bigfile
+http_response_sendfile
   (HttpResponse *res, char *filename, char *content);
 
 void

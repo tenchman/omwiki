@@ -453,30 +453,6 @@ http_response_set_data(HttpResponse *res, void *data, int data_len)
 }
 
 void
-http_response_send_smallfile
-  (HttpResponse *res, char *filename, char *content, unsigned long sizelimit)
-/* ! file loaded in mem */
-{
-  unsigned char *data;
-  FILE *fp=fopen(filename,"rb");
-  /* get file size and alloc memory */
-  fseek (fp , 0 , SEEK_END);
-  unsigned long datasize = ftell(fp);
-  if (datasize > sizelimit)
-    exit(-1);
-  rewind (fp);
-  if (!(data = (unsigned char*)malloc(datasize)))
-    exit(-1);
-  /* load the file */
-  if (!fread(data, datasize, 1, fp))
-    exit(-1);
-  http_response_set_content_type(res, content);
-  http_response_set_data(res, data, datasize);
-  http_response_send(res);
-  fclose(fp);
-}
-
-void
 http_response_send_headers(HttpResponse *res)
 {
   printf("HTTP/1.0 %d %s\r\n", res->status, res->status_str);
@@ -509,23 +485,36 @@ http_response_send(HttpResponse *res)
 
 
 void
-http_response_send_bigfile
+http_response_sendfile
     (HttpResponse *res, char *filename, char *content)
 /* ! basic, just read and copy file bit/bit */
 {
-  http_response_set_content_type(res, content);
-  http_response_send_headers(res);  
-  unsigned char *data;
   FILE *fp=fopen(filename,"rb");
-  /* get file size and alloc memory */
+  char buf[BUFSIZ];
+
+  /* get file size */
   fseek (fp , 0 , SEEK_END);
-  unsigned long datasize = ftell(fp);
+  /**
+   * Set 'data.size' to force sending the
+   * Content-Length Header
+  **/
+  res->data.len = ftell(fp);
   rewind (fp);
-  if (!(data = (unsigned char*)malloc(datasize)))
-    exit(-1);
-  /* copy */
-  while ( datasize-- )
-    fputc(fgetc(fp),stdout);
+
+  http_response_set_content_type(res, content);
+  http_response_send_headers(res);
+
+  /* copy data in sizeof(buf) chunks */
+  while ( res->data.len >= sizeof(buf) ) {
+    fread(buf, sizeof(buf), 1, fp);
+    fwrite(buf, sizeof(buf), 1, stdout);
+    res->data.len -= sizeof(buf);
+  }
+  /* copy remaining data */
+  if (res->data.len > 0) {
+    fread(buf, res->data.len, 1, fp);
+    fwrite(buf, res->data.len, 1, stdout);
+  }
   fclose(fp);
 }
 
