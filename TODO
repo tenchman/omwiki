@@ -8,3 +8,4 @@
 * support syntax highlighted code fragment via exterbal formatters
 ** i.e. {{code class="c"}}...{{code}}
 * reduce code size while adding new features (boah!)
+* rework contenttype detection

@@ -639,21 +639,36 @@ wiki_handle_http_request(HttpRequest *req)
 
   if ( (str_ptr=strrchr(page, '.')) ) 
   {
-    /* check if it's an image extension */
-    if ( !strcasecmp(str_ptr, ".png") || !strcasecmp(str_ptr, ".jpeg") ||
-         !strcasecmp(str_ptr, ".jpg") || !strcasecmp(str_ptr, ".gif") ||
-         !strcasecmp(str_ptr, ".pdf") )
-    {
-      http_response_send_smallfile(res, page+1, "image/ico", 1000000);
-      /* http_response_send_bigfile(res, page+1, "image/ico"); */
-      exit(0);
+    char *contenttype = NULL;
+    /*
+     * check some well known file extension
+     *
+     * XXX broken by design, but emulate old behavior for now XXX
+    **/
+
+    if (!strcasecmp(str_ptr, ".png")) {
+      contenttype = "image/png";
+    } else if (!strcasecmp(str_ptr, ".jpeg") ||
+	!strcasecmp(str_ptr, ".jpg")) {
+      contenttype = "image/jpeg";
+    } else if (!strcasecmp(str_ptr, ".gif")) {
+      contenttype = "image/gif";
+    } else if (!strcasecmp(str_ptr, ".pdf")) {
+      contenttype = "application/pdf";
+    } else if (!strcasecmp(str_ptr, ".gz")) {
+      contenttype = "application/gzip";
+    } else if (!strcasecmp(str_ptr, ".bz2")) {
+      contenttype = "application/x-bzip2";
+    } else if (!strcasecmp(str_ptr, ".lzma")) {
+      contenttype = "application/octet-stream";
+    } else if (!strcasecmp(str_ptr, ".zip")) {
+      contenttype = "application/zip";
+    } else if (!!strcasecmp(str_ptr, ".tar")) {
+      contenttype = "application/x-tar";
     }
-    /* check if it's a package or compressed file */
-    else if ( !strcasecmp(str_ptr, ".gz") || !strcasecmp(str_ptr, ".bz2") ||
-         !strcasecmp(str_ptr, ".lzma") || !strcasecmp(str_ptr, ".zip") ||
-         !strcasecmp(str_ptr, ".tar") )
-    {
-      http_response_send_bigfile(res, page+1, "application/octet-stream");
+
+    if (contenttype) {
+      http_response_sendfile(res, page+1, contenttype);
       exit(0);
     }
   }
