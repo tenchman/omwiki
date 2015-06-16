@@ -96,8 +96,8 @@ a.externallink {
   border: none !important;
 }
 
-a.externallink:before {
-  content: "↗ ";
+a.externallink:after {
+  content: "⇗";
 }
 
 a:hover {
