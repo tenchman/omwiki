@@ -133,12 +133,11 @@ char*
 util_htmlize(const char *in, string_t *s)
 {
   int c;
-  int n, i = 0;
+  int i = 0;
   int count = 0;
 
-  n = strlen(in);
-  while( i<n && (c = in[i])!=0 ){
-    switch( c ){
+  while (0 != (c = in[i])) {
+    switch (c) {
       case '<':   count += 4;       break;
       case '>':   count += 4;       break;
       case '&':   count += 5;       break;
@@ -156,8 +155,8 @@ util_htmlize(const char *in, string_t *s)
   }
   s->len = 0; /* rewind to start */
 
-  while( n-->0 && (c = *in)!=0 ){
-    switch( c ){
+  while (0 != (c = *in)) {
+    switch (c) {
       case '<':   
         s->s[s->len++] = '&';
         s->s[s->len++] = 'l';
