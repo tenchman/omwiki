@@ -436,7 +436,7 @@ print_element(wiki_ctx_t *ctx, element_t *el, unsigned *flag)
     ctx->line.pos++;
   } else {
     *ctx->line.pos = '\0';
-    http_response_printf(ctx->res, "%s%s\n", util_htmlize(ctx->page_data, &ctx->htmlbuf),
+    http_response_printf(ctx->res, "%s%s", util_htmlize(ctx->page_data, &ctx->htmlbuf),
 	*flag ? el->end : el->start);
     *flag ^= 1;				  /* toggle flag */
     ctx->page_data = ctx->line.pos + 1;	  /* advance page_data to next line */
