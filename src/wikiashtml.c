@@ -95,6 +95,40 @@ get_line_from_string(char **lines, int *line_len)
   return z;
 }
 
+static inline int isimage(char *p)
+{
+  int ret = 1;
+  if (!strncmp(p - 4, ".gif", 4)) {
+    /* image/gif */
+  } else if (!strncmp(p - 4, ".png", 4)) {
+    /* image/png */
+  } else if (!strncmp(p - 4, ".jpg", 4)) {
+    /* image/jpg */
+  } else if (!strncmp(p - 5, ".jpeg", 5)) {
+    /* image/jpg */
+  } else {
+    ret = 0;
+  }
+  return ret;
+}
+
+static inline int islink(char *p)
+{
+  int ret = 1;
+  if (!strncasecmp(p, "http://", 7)) {
+    /* link */
+  } else if (!strncasecmp(p, "https://", 8)) {
+    /* link */
+  } else if (!strncasecmp(p, "mailto://", 9)) {
+    /* link */
+  } else if (!strncasecmp(p, "file://", 7)) {
+    /* link */
+  } else {
+    ret = 0;
+  }
+  return ret;
+}
+
 static char*
 check_for_link(char *line, int *skip_chars)
 {
@@ -279,10 +313,7 @@ check_for_link(char *line, int *skip_chars)
       *skip_chars = p - start;
       return result;
     }
-    else if (!strncasecmp(p, "http://", 7)
-       || !strncasecmp(p, "https://", 8)
-       || !strncasecmp(p, "mailto://", 9)
-       || !strncasecmp(p, "file://", 7))
+  else if (islink(p))
   /* external link */
     {
       while ( *p != '\0' && !isspace(*p) ) p++;
@@ -318,8 +349,7 @@ check_for_link(char *line, int *skip_chars)
       *skip_chars = p - start;
 
       /* url is an image ? */
-      if (!strncmp(url+len-4, ".gif", 4) || !strncmp(url+len-4, ".png", 4)
-      || !strncmp(url+len-4, ".jpg", 4) || !strncmp(url+len-5, ".jpeg", 5))
+      if (isimage(url + len))
       {
           if (pic_width)
             sprintf(width_pic_str," width=\"%i\"",pic_width);
