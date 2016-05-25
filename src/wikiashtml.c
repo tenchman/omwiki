@@ -690,7 +690,7 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
   char  color_str[64];
   char label[80];
   char *str_ptr;
-  char  *sectionlist;
+  char  *sectionlist = NULL;
   int section      = 0;
   /* flags, mainly for open tag states */
   int open_para    = 0;
@@ -1252,5 +1252,6 @@ HttpResponse *res, char *raw_page_data, int autorized, char *page)
     http_response_printf(res, "</form>\n");
 
   free(ctx.htmlbuf.s);
+  free(sectionlist);
   return private;
 }
