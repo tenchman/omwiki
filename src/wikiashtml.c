@@ -311,6 +311,7 @@ check_for_link(char *line, int *skip_chars)
       "<object type=\"application/x-shockwave-flash\" data=\"%s\" width=\"%i\" height=\"%i\">",
         url, w, h);
       *skip_chars = p - start;
+      free(url);
       return result;
     }
   else if (islink(p))
@@ -399,7 +400,7 @@ check_for_link(char *line, int *skip_chars)
               asprintf(&result, "<a %s href='%s'>%s</a>", extra_attr, url, url);
           }
       }
-
+      free(url);
       return result;
   }
 
