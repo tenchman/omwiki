@@ -27,13 +27,13 @@
 " ( <a href=%s?edit title='Edit this wiki page contents. [alt-j]' accesskey='j'>Edit</a> | " \
 "<a href=%s?delete title='Delete page. [alt-d]' accesskey='d'>Delete</a> ) </td>" \
 "<td align='right' >\n"                                    \
-"<a href='Login' title='Login page. [alt-l]' accesskey='l'>%s</a> |\n"  \
-"<a href='WikiHome' title='Visit Wiki home page. [alt-z]' accesskey='z'>Home</a> |\n"  \
-"<a href='Index' title='List all pages in the wiki. [alt-i]' accesskey='i' >Index</a> | \n"  \
-"<a href='Changes' title='List recent changes in the wiki. [alt-r]' accesskey='r' >Changes</a> | \n"  \
-"<a href='Create' title='Create a new wiki page by title. [alt-c]' accesskey='c'>New</a> | \n"    \
-"<a href='WikiHelp' title='Get help on wiki usage and formatting.'>Help</a>  \n"    \
-"<input type='text' name='expr' size='15' title='Enter text to search for and press return.' /> </td>\n"  \
+"<a id='wikilogin'   href='Login'    title='Login page. [alt-l]' accesskey='l'>%s</a> |\n"  \
+"<a id='wikihome'    href='WikiHome' title='Visit Wiki home page. [alt-z]' accesskey='z'>Home</a> |\n"  \
+"<a id='wikiindex'   href='Index'    title='List all pages in the wiki. [alt-i]' accesskey='i' >Index</a> | \n"  \
+"<a id='wikichanges' href='Changes'  title='List recent changes in the wiki. [alt-r]' accesskey='r' >Changes</a> | \n"  \
+"<a id='wikinew'     href='Create'   title='Create a new wiki page by title. [alt-c]' accesskey='c'>New</a> | \n"    \
+"<a id='wikihelp'    href='WikiHelp' title='Get help on wiki usage and formatting.'>Help</a>  \n"    \
+"<input id='wikisearch' type='text' name='expr' size='15' title='Enter text to search for and press return.' /> </td>\n"  \
 "</tr>\n"                                                                \
 "</table>\n"                                                             \
 "</form>\n"                                                              \
