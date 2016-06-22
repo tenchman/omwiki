@@ -492,11 +492,17 @@ print_element(wiki_ctx_t *ctx, element_t *el, unsigned *flag)
  *
  * and any combination of it (if it makes sense) see above.
 **/
+typedef struct {
+  int value;
+  int defined;
+} int_attr_t;
+#define ATTR_UNSET { 0, 0 }
 static int parse_table_attributes(const char *s, char *buf, size_t bufsize)
 {
   const char *start = s;
   char *end, *align = NULL, *valign = NULL;
-  int i, ret = 0, colspan = 0, rowspan = 0, bgcolor = 0, width = 0;;
+  int i, ret = 0;
+  int_attr_t colspan = ATTR_UNSET, rowspan = ATTR_UNSET, bgcolor = ATTR_UNSET, width = ATTR_UNSET;
   size_t n = 0;
 
   if ('<' != *s) {
@@ -528,20 +534,24 @@ static int parse_table_attributes(const char *s, char *buf, size_t bufsize)
 	  valign = "bottom";
 	  break;
 	case '-':
-	  colspan = strtol(s, &end, 10);
+	  colspan.value = strtol(s, &end, 10);
+	  colspan.defined = 1;
 	  s = end;
 	  break;
 	case '|':
-	  rowspan = strtol(s, &end, 10);
+	  rowspan.value = strtol(s, &end, 10);
+	  rowspan.defined = 1;
 	  s = end;
 	  break;
 	case '#':
-	  bgcolor = strtol(s, &end, 16);
+	  bgcolor.value = strtol(s, &end, 16);
+	  bgcolor.defined = 1;
 	  s = end;
 	  break;
 	case '1' ... '9':
 	  if ((i = strtol(s - 1, &end, 10)) <= 100 && '%' == *end) {
-	    width = i;
+	    width.value = i;
+	    width.defined = 1;
 	    s = end + 1;
 	    break;
 	  }
@@ -559,17 +569,17 @@ endofstyle:
     if (NULL != valign) {
       n += snprintf(buf + n, bufsize - n, "valign=\"%s\" ", valign);
     }
-    if (0 != colspan) {
-      n += snprintf(buf + n, bufsize - n, "colspan=%d ", colspan);
+    if (0 != colspan.defined) {
+      n += snprintf(buf + n, bufsize - n, "colspan=%d ", colspan.value);
     }
-    if (0 != rowspan) {
-      n += snprintf(buf + n, bufsize - n, "rowspan=%d ", rowspan);
+    if (0 != rowspan.defined) {
+      n += snprintf(buf + n, bufsize - n, "rowspan=%d ", rowspan.value);
     }
-    if (0 != bgcolor) {
-      n += snprintf(buf + n, bufsize - n, "bgcolor=\"#%06x\" ", bgcolor);
+    if (0 != bgcolor.defined) {
+      n += snprintf(buf + n, bufsize - n, "bgcolor=\"#%06x\" ", bgcolor.value);
     }
-    if (0 != width) {
-      n += snprintf(buf + n, bufsize - n, "width=\"%d%%\" ", width);
+    if (0 != width.defined) {
+      n += snprintf(buf + n, bufsize - n, "width=\"%d%%\" ", width.value);
     }
     /* cosmetic, remove trailing space */
     if (n && n <= bufsize) {
